@@ -53,7 +53,7 @@ func (m *MonitorController) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Ad
 
 	m.mux.Lock()
 	defer m.mux.Unlock()
-	m.Monitors[tilt] = MonitorState{tilt, time.Now(), (float64(b.major) - 32) * 5 / 9, float64(b.minor) / 1000}
+	m.Monitors[tilt] = MonitorState{tilt, time.Now(), float64(b.minor) / 1000, (float64(b.major) - 32) * 5 / 9}
 }
 
 func (m *MonitorController) Scan() {
