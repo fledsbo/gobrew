@@ -1,9 +1,10 @@
 package hwinterface
 
 import (
+	"log"
 	"sync"
 	"time"
-	"log"
+
 	"github.com/paypal/gatt"
 	"github.com/paypal/gatt/examples/option"
 )
@@ -17,6 +18,7 @@ type MonitorState struct {
 
 type MonitorController struct {
 	mux      sync.Mutex
+	c        chan MonitorState
 	Monitors map[string]MonitorState
 }
 
@@ -51,15 +53,13 @@ func (m *MonitorController) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Ad
 		return
 	}
 
-	m.mux.Lock()
-	defer m.mux.Unlock()
-	log.Printf("Found data for %s", tilt)
-	m.Monitors[tilt] = MonitorState{tilt, time.Now(), float64(b.minor) / 1000, (float64(b.major) - 32) * 5 / 9}
+	m.c <- MonitorState{tilt, time.Now(), float64(b.minor) / 1000, (float64(b.major) - 32) * 5 / 9}
 }
 
 func NewMonitorController() (out *MonitorController) {
 	out = new(MonitorController)
 	out.Monitors = make(map[string]MonitorState)
+	out.c = make(chan MonitorState, 100)
 	return
 }
 
@@ -71,7 +71,11 @@ func (m *MonitorController) Scan() {
 	}
 	device.Handle(gatt.PeripheralDiscovered(m.onPeripheralDiscovered))
 	device.Init(onStateChanged)
-	select {}
+	for ms := range m.c {
+		m.mux.Lock()
+		m.Monitors[ms.Name] = ms
+		m.mux.Unlock()
+	}
 }
 
 func (m *MonitorController) GetMonitors() (out []MonitorState) {
