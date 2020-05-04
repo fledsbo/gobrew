@@ -1,0 +1,52 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type FermentationMonitor {
+  id: ID!
+  name: String!
+  type: String!
+  temperature: Float
+  gravity: Float
+}
+
+type FermentationContainer {
+  id: ID!
+  name: String!
+  canHeat: Boolean!
+  heating: Boolean!  
+  cooling: Boolean!
+  canCool: Boolean!
+}
+
+type FermentationBatch {
+  id: ID!
+  monitor: FermentationMonitor
+  container: FermentationContainer
+}
+
+type Batch {
+  id: ID!
+  name: String!
+  recipe: Recipe
+  state: BatchState!
+  fermentation: FermentationBatch
+}
+
+enum BatchState {
+  PLANNING,
+  MASHING,
+  FERMENTING,
+  CONDITIONING,
+}
+
+type Recipe {
+  id: ID!
+  name: String!
+}
+
+type Query {
+  batches: [Batch!]!
+  monitors: [FermentationMonitor!]!
+}
+

@@ -1,5 +1,6 @@
 package main
 
+/*
 import (
 	"fmt"
 	"log"
@@ -88,4 +89,4 @@ func testOutlets() {
 func main() {
 	testOutlets()
 }
-
+*/
