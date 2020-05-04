@@ -20,10 +20,10 @@ func main() {
 		port = defaultPort
 	}
 
-	monitorController := hwinterface.MonitorController{}
+	monitorController := hwinterface.NewMonitorController()
 	go monitorController.Scan()
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{&monitorController}}))
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{monitorController}}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

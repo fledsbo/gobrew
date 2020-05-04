@@ -3,7 +3,7 @@ package hwinterface
 import (
 	"sync"
 	"time"
-
+	"log"
 	"github.com/paypal/gatt"
 	"github.com/paypal/gatt/examples/option"
 )
@@ -53,10 +53,18 @@ func (m *MonitorController) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Ad
 
 	m.mux.Lock()
 	defer m.mux.Unlock()
+	log.Printf("Found data for %s", tilt)
 	m.Monitors[tilt] = MonitorState{tilt, time.Now(), float64(b.minor) / 1000, (float64(b.major) - 32) * 5 / 9}
 }
 
+func NewMonitorController() (out *MonitorController) {
+	out = new(MonitorController)
+	out.Monitors = make(map[string]MonitorState)
+	return
+}
+
 func (m *MonitorController) Scan() {
+	log.Printf("Starting scan")
 	device, err := gatt.NewDevice(option.DefaultClientOptions...)
 	if err != nil {
 		panic(err)
@@ -71,6 +79,7 @@ func (m *MonitorController) GetMonitors() (out []MonitorState) {
 	defer m.mux.Unlock()
 	out = make([]MonitorState, 0, len(m.Monitors))
 	for _, v := range m.Monitors {
+		log.Printf("Returning data for %s", v.Name)
 		out = append(out, v)
 	}
 	return
