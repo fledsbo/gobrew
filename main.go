@@ -2,10 +2,15 @@ package main
 
 import (
 	"fmt"
-	//"github.com/paypal/gatt"
+	"log"
+	"io/ioutil"
+	"github.com/paypal/gatt"
+	"github.com/paypal/gatt/examples/option"
+	"time"
+	"github.com/martinohmann/rfoutlet/pkg/gpio"
+	"github.com/warthog618/gpiod"
 )
 
-/*
 func onStateChanged(device gatt.Device, s gatt.State) {
 	switch s {
 	case gatt.StatePoweredOn:
@@ -40,33 +45,47 @@ func onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Advertisement, rssi int) 
 
 	fmt.Printf("%s: %.1f %d\r", tilt, (float64(b.major)-32)*5/9, b.minor)
 }
-*/
+
+func scanTilt() {
+	log.SetOutput(ioutil.Discard)
+	device, err := gatt.NewDevice(option.DefaultClientOptions...)
+	if err != nil {
+	log.Fatalf("Failed to open device, err: %s\n", err)
+		return
+	}
+	device.Handle(gatt.PeripheralDiscovered(onPeripheralDiscovered))
+	device.Init(onStateChanged)
+	select {}
+}
+
+func testOutlets() {
+	c, err := gpiod.NewChip("gpiochip0")
+	if err != nil {
+		panic(err)
+	}
+
+	offset := 23
+	transmitter, err := gpio.NewTransmitter(c, offset, gpio.TransmissionCount(10))
+	if err != nil {
+		panic(err)
+	}
+
+	defer transmitter.Close()
+
+
+	for g := 0; g < 4; g++ {
+		for o := 0; o < 4; o++ {
+			fmt.Printf("Testing %d %d\n", g, o)
+			ol := NewDialOutlet(g, o)
+			<-transmitter.Transmit(ol.CodeOn, gpio.DefaultProtocols[ol.Protocol], ol.PulseLength)
+			time.Sleep(4 * time.Second)
+			<-transmitter.Transmit(ol.CodeOff, gpio.DefaultProtocols[ol.Protocol], ol.PulseLength)
+			time.Sleep(1 * time.Second)
+		}
+	}
+}
 
 func main() {
-	//log.SetOutput(ioutil.Discard)
-	//device, err := gatt.NewDevice(option.DefaultClientOptions...)
-	//if err != nil {
-	//log.Fatalf("Failed to open device, err: %s\n", err)
-	//return
-	//}
-	//device.Handle(gatt.PeripheralDiscovered(onPeripheralDiscovered))
-	//device.Init(onStateChanged)
-	//select {}
-
-	//c, err := gpiod.NewChip("gpiochip0")
-	//if err != nil {
-	//	panic(err)
-	//}
-
-	//offset := rpi.GPIO4
-	//transmitter := gpio.NewTransmitter(c, offset, gpio.TransmissionCount(1))
-	//defer transmitter.Close()
-	//
-	//	<-transmitter.Transmit(
-
-	ol1 := NewDialOutlet(0, 0)
-	ol2 := NewDialOutlet(0, 1)
-
-	fmt.Println(ol1.CodeOn, ol1.CodeOff)
-	fmt.Println(ol2.CodeOn, ol2.CodeOff)
+	testOutlets()
 }
+

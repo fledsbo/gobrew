@@ -3,8 +3,8 @@ package main
 type Outlet struct {
 	CodeOn      uint64
 	CodeOff     uint64
-	Protocol    int
-	PulseLength int
+	Protocol    uint
+	PulseLength uint
 }
 
 func encode(str []byte) (out uint64) {
@@ -34,7 +34,7 @@ func dialCode(group int, id int, on bool) (out []byte) {
 
 func NewDialOutlet(group int, id int) (o *Outlet) {
 	o = new(Outlet)
-	o.Protocol = 1
+	o.Protocol = 0
 	o.PulseLength = 350
 	o.CodeOn = encode(dialCode(group, id, true))
 	o.CodeOff = encode(dialCode(group, id, false))
