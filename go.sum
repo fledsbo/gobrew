@@ -32,6 +32,12 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/trifles v0.0.0-20190318185328-a8d75aae118c/go.mod h1:if7Fbed8SFyPtHLHbg49SI7NAdJiC5WIA09pe59rfAA=
+github.com/fledsbo/gatt v0.0.0-20200505053607-e51d6a783cee h1:7cRW488NHohzJr7Zer4b51E1FVZ6Pl5ocj3c38JqpU0=
+github.com/fledsbo/gatt v0.0.0-20200505053607-e51d6a783cee/go.mod h1:ZEJQQfdpgdpa+L0OP+8K0L0m2IKH+VtgWzOOc387Iuk=
+github.com/fledsbo/gatt v0.1.1 h1:SOF0maZ0aZhGUSxRNOge7IGC7M1GjDOqz3v59eosR5E=
+github.com/fledsbo/gatt v0.1.1/go.mod h1:ykoOFugTrEp+qKOWjCLBhaObCxiUOvHm2wahucu9XY8=
+github.com/fledsbo/gatt v0.1.2 h1:bLKQcCCWAXNx18xebEo0z0Cva7C2CxhBaKIFheWcJrg=
+github.com/fledsbo/gatt v0.1.2/go.mod h1:ykoOFugTrEp+qKOWjCLBhaObCxiUOvHm2wahucu9XY8=
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/gin-contrib/cors v1.3.1/go.mod h1:jjEJ4268OPZUcU7k9Pm653S7lXUGcqMADzFA61xsmDk=
