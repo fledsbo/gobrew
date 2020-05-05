@@ -1,6 +1,7 @@
 package graph
 
 import (
+	"github.com/fledsbo/gobrew/fermentation"
 	"github.com/fledsbo/gobrew/hwinterface"
 )
 
@@ -9,5 +10,7 @@ import (
 // It serves as dependency injection for your app, add any dependencies you require here.
 
 type Resolver struct {
-	MonitorController *hwinterface.MonitorController
+	MonitorController      *hwinterface.MonitorController
+	OutletController       *hwinterface.OutletController
+	FermentationControllers []*fermentation.FermentationController
 }
