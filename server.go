@@ -7,6 +7,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/fledsbo/gobrew/fermentation"
 	"github.com/fledsbo/gobrew/graph"
 	"github.com/fledsbo/gobrew/graph/generated"
 	"github.com/fledsbo/gobrew/hwinterface"
@@ -21,9 +22,17 @@ func main() {
 	}
 
 	monitorController := hwinterface.NewMonitorController()
+	outletController := hwinterface.NewOutletController()
+	fermentationController := fermentation.NewFermentationController("Test", monitorController, outletController)
 	go monitorController.Scan()
 
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: &graph.Resolver{monitorController}}))
+	resolver := &graph.Resolver {		
+		MonitorController: monitorController,
+		OutletController: outletController,
+		FermentationControllers: []*fermentation.FermentationController{ fermentationController },
+	}
+
+	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)

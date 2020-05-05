@@ -6,20 +6,22 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/fledsbo/gobrew/hwinterface"
 )
 
 type Batch struct {
-	ID           string             `json:"id"`
-	Name         string             `json:"name"`
-	Recipe       *Recipe            `json:"recipe"`
-	State        BatchState         `json:"state"`
-	Fermentation *FermentationBatch `json:"fermentation"`
+	ID           string        `json:"id"`
+	Name         string        `json:"name"`
+	Recipe       *Recipe       `json:"recipe"`
+	State        BatchState    `json:"state"`
+	Fermentation *Fermentation `json:"fermentation"`
 }
 
-type FermentationBatch struct {
-	ID        string                 `json:"id"`
-	Monitor   *FermentationMonitor   `json:"monitor"`
-	Container *FermentationContainer `json:"container"`
+type Fermentation struct {
+	ID        string                    `json:"id"`
+	Monitor   *hwinterface.MonitorState `json:"monitor"`
+	Container *FermentationContainer    `json:"container"`
 }
 
 type FermentationContainer struct {
@@ -29,14 +31,6 @@ type FermentationContainer struct {
 	Heating bool   `json:"heating"`
 	Cooling bool   `json:"cooling"`
 	CanCool bool   `json:"canCool"`
-}
-
-type FermentationMonitor struct {
-	ID          string   `json:"id"`
-	Name        string   `json:"name"`
-	Type        string   `json:"type"`
-	Temperature *float64 `json:"temperature"`
-	Gravity     *float64 `json:"gravity"`
 }
 
 type Recipe struct {

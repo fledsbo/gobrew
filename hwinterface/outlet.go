@@ -33,13 +33,13 @@ func encode(str []byte) (out uint64) {
 	return
 }
 
-func NewDialOutlet(group int, id int) (o *Outlet) {
-	o = new(Outlet)
-	o.Protocol = 0
-	o.PulseLength = 350
-	o.CodeOn = encode(dialCode(group, id, true))
-	o.CodeOff = encode(dialCode(group, id, false))
-	return
+func NewDialOutlet(group int, id int) Outlet {
+	return Outlet{
+		Protocol:    0,
+		PulseLength: 350,
+		CodeOn:      encode(dialCode(group, id, true)),
+		CodeOff:     encode(dialCode(group, id, false)),
+	}
 }
 
 func dialCode(group int, id int, on bool) (out []byte) {

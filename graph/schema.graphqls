@@ -8,6 +8,7 @@ type FermentationMonitor {
   type: String!
   temperature: Float
   gravity: Float
+  timestamp: String
 }
 
 type FermentationContainer {
@@ -19,7 +20,7 @@ type FermentationContainer {
   canCool: Boolean!
 }
 
-type FermentationBatch {
+type Fermentation {
   id: ID!
   monitor: FermentationMonitor
   container: FermentationContainer
@@ -30,7 +31,7 @@ type Batch {
   name: String!
   recipe: Recipe
   state: BatchState!
-  fermentation: FermentationBatch
+  fermentation: Fermentation
 }
 
 enum BatchState {
@@ -49,4 +50,5 @@ type Query {
   batches: [Batch!]!
   monitors: [FermentationMonitor!]!
 }
+
 
