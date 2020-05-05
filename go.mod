@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	github.com/99designs/gqlgen v0.11.3
+	github.com/boltdb/bolt v1.3.1 // indirect
 	github.com/fledsbo/gatt v0.1.2
 	github.com/martinohmann/rfoutlet v1.0.0
 	github.com/vektah/gqlparser/v2 v2.0.1

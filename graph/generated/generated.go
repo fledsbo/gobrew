@@ -52,16 +52,20 @@ type ComplexityRoot struct {
 	}
 
 	Fermentation struct {
-		Container func(childComplexity int) int
-		Monitor   func(childComplexity int) int
-	}
-
-	FermentationContainer struct {
 		CanCool func(childComplexity int) int
 		CanHeat func(childComplexity int) int
+		Config  func(childComplexity int) int
 		Cooling func(childComplexity int) int
 		Heating func(childComplexity int) int
+		Monitor func(childComplexity int) int
 		Name    func(childComplexity int) int
+	}
+
+	FermentationConfig struct {
+		Hysteresis           func(childComplexity int) int
+		MaxReadingAgeSec     func(childComplexity int) int
+		MinOutletDurationSec func(childComplexity int) int
+		TargetTemp           func(childComplexity int) int
 	}
 
 	FermentationMonitor struct {
@@ -73,12 +77,13 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		SetMonitor func(childComplexity int, input *model.SetMonitorInput) int
+		SetFermentation func(childComplexity int, input *model.SetFermentationInput) int
+		SetMonitor      func(childComplexity int, input *model.SetMonitorInput) int
 	}
 
 	Query struct {
-		Batches  func(childComplexity int) int
-		Monitors func(childComplexity int) int
+		Fermentations func(childComplexity int) int
+		Monitors      func(childComplexity int) int
 	}
 }
 
@@ -87,9 +92,10 @@ type FermentationMonitorResolver interface {
 }
 type MutationResolver interface {
 	SetMonitor(ctx context.Context, input *model.SetMonitorInput) (string, error)
+	SetFermentation(ctx context.Context, input *model.SetFermentationInput) (string, error)
 }
 type QueryResolver interface {
-	Batches(ctx context.Context) ([]*model.Batch, error)
+	Fermentations(ctx context.Context) ([]*model.Fermentation, error)
 	Monitors(ctx context.Context) ([]*hwinterface.MonitorState, error)
 }
 
@@ -129,12 +135,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Batch.State(childComplexity), true
 
-	case "Fermentation.container":
-		if e.complexity.Fermentation.Container == nil {
+	case "Fermentation.canCool":
+		if e.complexity.Fermentation.CanCool == nil {
 			break
 		}
 
-		return e.complexity.Fermentation.Container(childComplexity), true
+		return e.complexity.Fermentation.CanCool(childComplexity), true
+
+	case "Fermentation.canHeat":
+		if e.complexity.Fermentation.CanHeat == nil {
+			break
+		}
+
+		return e.complexity.Fermentation.CanHeat(childComplexity), true
+
+	case "Fermentation.config":
+		if e.complexity.Fermentation.Config == nil {
+			break
+		}
+
+		return e.complexity.Fermentation.Config(childComplexity), true
+
+	case "Fermentation.cooling":
+		if e.complexity.Fermentation.Cooling == nil {
+			break
+		}
+
+		return e.complexity.Fermentation.Cooling(childComplexity), true
+
+	case "Fermentation.heating":
+		if e.complexity.Fermentation.Heating == nil {
+			break
+		}
+
+		return e.complexity.Fermentation.Heating(childComplexity), true
 
 	case "Fermentation.monitor":
 		if e.complexity.Fermentation.Monitor == nil {
@@ -143,40 +177,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Fermentation.Monitor(childComplexity), true
 
-	case "FermentationContainer.canCool":
-		if e.complexity.FermentationContainer.CanCool == nil {
+	case "Fermentation.name":
+		if e.complexity.Fermentation.Name == nil {
 			break
 		}
 
-		return e.complexity.FermentationContainer.CanCool(childComplexity), true
+		return e.complexity.Fermentation.Name(childComplexity), true
 
-	case "FermentationContainer.canHeat":
-		if e.complexity.FermentationContainer.CanHeat == nil {
+	case "FermentationConfig.Hysteresis":
+		if e.complexity.FermentationConfig.Hysteresis == nil {
 			break
 		}
 
-		return e.complexity.FermentationContainer.CanHeat(childComplexity), true
+		return e.complexity.FermentationConfig.Hysteresis(childComplexity), true
 
-	case "FermentationContainer.cooling":
-		if e.complexity.FermentationContainer.Cooling == nil {
+	case "FermentationConfig.MaxReadingAgeSec":
+		if e.complexity.FermentationConfig.MaxReadingAgeSec == nil {
 			break
 		}
 
-		return e.complexity.FermentationContainer.Cooling(childComplexity), true
+		return e.complexity.FermentationConfig.MaxReadingAgeSec(childComplexity), true
 
-	case "FermentationContainer.heating":
-		if e.complexity.FermentationContainer.Heating == nil {
+	case "FermentationConfig.MinOutletDurationSec":
+		if e.complexity.FermentationConfig.MinOutletDurationSec == nil {
 			break
 		}
 
-		return e.complexity.FermentationContainer.Heating(childComplexity), true
+		return e.complexity.FermentationConfig.MinOutletDurationSec(childComplexity), true
 
-	case "FermentationContainer.name":
-		if e.complexity.FermentationContainer.Name == nil {
+	case "FermentationConfig.TargetTemp":
+		if e.complexity.FermentationConfig.TargetTemp == nil {
 			break
 		}
 
-		return e.complexity.FermentationContainer.Name(childComplexity), true
+		return e.complexity.FermentationConfig.TargetTemp(childComplexity), true
 
 	case "FermentationMonitor.gravity":
 		if e.complexity.FermentationMonitor.Gravity == nil {
@@ -213,6 +247,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FermentationMonitor.Type(childComplexity), true
 
+	case "Mutation.setFermentation":
+		if e.complexity.Mutation.SetFermentation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setFermentation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetFermentation(childComplexity, args["input"].(*model.SetFermentationInput)), true
+
 	case "Mutation.setMonitor":
 		if e.complexity.Mutation.SetMonitor == nil {
 			break
@@ -225,12 +271,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SetMonitor(childComplexity, args["input"].(*model.SetMonitorInput)), true
 
-	case "Query.batches":
-		if e.complexity.Query.Batches == nil {
+	case "Query.fermentations":
+		if e.complexity.Query.Fermentations == nil {
 			break
 		}
 
-		return e.complexity.Query.Batches(childComplexity), true
+		return e.complexity.Query.Fermentations(childComplexity), true
 
 	case "Query.monitors":
 		if e.complexity.Query.Monitors == nil {
@@ -315,17 +361,22 @@ type FermentationMonitor {
   timestamp: String
 }
 
-type FermentationContainer {
+type FermentationConfig {
+	TargetTemp:       Float!
+	Hysteresis:       Float!
+	MaxReadingAgeSec:     Int!
+	MinOutletDurationSec: Int!
+}
+
+type Fermentation {
   name: String!
+  monitor: FermentationMonitor
   canHeat: Boolean!
   heating: Boolean!  
   cooling: Boolean!
   canCool: Boolean!
-}
 
-type Fermentation {
-  monitor: FermentationMonitor
-  container: FermentationContainer
+  config: FermentationConfig
 }
 
 type Batch {
@@ -347,13 +398,29 @@ input SetMonitorInput {
   gravity: Float
 }
 
+input SetFermentationConfigInput {
+	TargetTemp:       Float
+	Hysteresis:       Float
+	MaxReadingAgeSec:     Int
+	MinOutletDurationSec: Int  
+}
+
+input SetFermentationInput {
+  name: String!
+  monitor: String
+  config: SetFermentationConfigInput
+}
+
 type Query {
-  batches: [Batch!]!
+  fermentations: [Fermentation!]!
   monitors: [FermentationMonitor!]!
 }
 
+
+
 type Mutation {
   setMonitor(input: SetMonitorInput) : String!
+  setFermentation(input: SetFermentationInput) : String!
 }
 
 
@@ -364,6 +431,20 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_setFermentation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SetFermentationInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOSetFermentationInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_setMonitor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -528,6 +609,40 @@ func (ec *executionContext) _Batch_fermentation(ctx context.Context, field graph
 	return ec.marshalOFermentation2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentation(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Fermentation_name(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Fermentation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Fermentation_monitor(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -559,7 +674,7 @@ func (ec *executionContext) _Fermentation_monitor(ctx context.Context, field gra
 	return ec.marshalOFermentationMonitor2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐMonitorState(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Fermentation_container(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
+func (ec *executionContext) _Fermentation_canHeat(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -568,71 +683,6 @@ func (ec *executionContext) _Fermentation_container(ctx context.Context, field g
 	}()
 	fc := &graphql.FieldContext{
 		Object:   "Fermentation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Container, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.FermentationContainer)
-	fc.Result = res
-	return ec.marshalOFermentationContainer2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationContainer(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _FermentationContainer_name(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _FermentationContainer_canHeat(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -658,7 +708,7 @@ func (ec *executionContext) _FermentationContainer_canHeat(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _FermentationContainer_heating(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Fermentation_heating(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -666,7 +716,7 @@ func (ec *executionContext) _FermentationContainer_heating(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
+		Object:   "Fermentation",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -692,7 +742,7 @@ func (ec *executionContext) _FermentationContainer_heating(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _FermentationContainer_cooling(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Fermentation_cooling(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -700,7 +750,7 @@ func (ec *executionContext) _FermentationContainer_cooling(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
+		Object:   "Fermentation",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -726,7 +776,7 @@ func (ec *executionContext) _FermentationContainer_cooling(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _FermentationContainer_canCool(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
+func (ec *executionContext) _Fermentation_canCool(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -734,7 +784,7 @@ func (ec *executionContext) _FermentationContainer_canCool(ctx context.Context, 
 		}
 	}()
 	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
+		Object:   "Fermentation",
 		Field:    field,
 		Args:     nil,
 		IsMethod: false,
@@ -758,6 +808,173 @@ func (ec *executionContext) _FermentationContainer_canCool(ctx context.Context, 
 	res := resTmp.(bool)
 	fc.Result = res
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Fermentation_config(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Fermentation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Config, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*model.FermentationConfig)
+	fc.Result = res
+	return ec.marshalOFermentationConfig2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationConfig(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FermentationConfig_TargetTemp(ctx context.Context, field graphql.CollectedField, obj *model.FermentationConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "FermentationConfig",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TargetTemp, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FermentationConfig_Hysteresis(ctx context.Context, field graphql.CollectedField, obj *model.FermentationConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "FermentationConfig",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hysteresis, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FermentationConfig_MaxReadingAgeSec(ctx context.Context, field graphql.CollectedField, obj *model.FermentationConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "FermentationConfig",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MaxReadingAgeSec, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _FermentationConfig_MinOutletDurationSec(ctx context.Context, field graphql.CollectedField, obj *model.FermentationConfig) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "FermentationConfig",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.MinOutletDurationSec, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNInt2int(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _FermentationMonitor_name(ctx context.Context, field graphql.CollectedField, obj *hwinterface.MonitorState) (ret graphql.Marshaler) {
@@ -962,7 +1179,48 @@ func (ec *executionContext) _Mutation_setMonitor(ctx context.Context, field grap
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Query_batches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+func (ec *executionContext) _Mutation_setFermentation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_setFermentation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetFermentation(rctx, args["input"].(*model.SetFermentationInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_fermentations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -979,7 +1237,7 @@ func (ec *executionContext) _Query_batches(ctx context.Context, field graphql.Co
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Batches(rctx)
+		return ec.resolvers.Query().Fermentations(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -991,9 +1249,9 @@ func (ec *executionContext) _Query_batches(ctx context.Context, field graphql.Co
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*model.Batch)
+	res := resTmp.([]*model.Fermentation)
 	fc.Result = res
-	return ec.marshalNBatch2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchᚄ(ctx, field.Selections, res)
+	return ec.marshalNFermentation2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_monitors(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2154,6 +2412,72 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputSetFermentationConfigInput(ctx context.Context, obj interface{}) (model.SetFermentationConfigInput, error) {
+	var it model.SetFermentationConfigInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "TargetTemp":
+			var err error
+			it.TargetTemp, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "Hysteresis":
+			var err error
+			it.Hysteresis, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "MaxReadingAgeSec":
+			var err error
+			it.MaxReadingAgeSec, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "MinOutletDurationSec":
+			var err error
+			it.MinOutletDurationSec, err = ec.unmarshalOInt2ᚖint(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetFermentationInput(ctx context.Context, obj interface{}) (model.SetFermentationInput, error) {
+	var it model.SetFermentationInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "monitor":
+			var err error
+			it.Monitor, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "config":
+			var err error
+			it.Config, err = ec.unmarshalOSetFermentationConfigInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetMonitorInput(ctx context.Context, obj interface{}) (model.SetMonitorInput, error) {
 	var it model.SetMonitorInput
 	var asMap = obj.(map[string]interface{})
@@ -2237,10 +2561,35 @@ func (ec *executionContext) _Fermentation(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Fermentation")
+		case "name":
+			out.Values[i] = ec._Fermentation_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "monitor":
 			out.Values[i] = ec._Fermentation_monitor(ctx, field, obj)
-		case "container":
-			out.Values[i] = ec._Fermentation_container(ctx, field, obj)
+		case "canHeat":
+			out.Values[i] = ec._Fermentation_canHeat(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "heating":
+			out.Values[i] = ec._Fermentation_heating(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "cooling":
+			out.Values[i] = ec._Fermentation_cooling(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "canCool":
+			out.Values[i] = ec._Fermentation_canCool(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "config":
+			out.Values[i] = ec._Fermentation_config(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2252,39 +2601,34 @@ func (ec *executionContext) _Fermentation(ctx context.Context, sel ast.Selection
 	return out
 }
 
-var fermentationContainerImplementors = []string{"FermentationContainer"}
+var fermentationConfigImplementors = []string{"FermentationConfig"}
 
-func (ec *executionContext) _FermentationContainer(ctx context.Context, sel ast.SelectionSet, obj *model.FermentationContainer) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, fermentationContainerImplementors)
+func (ec *executionContext) _FermentationConfig(ctx context.Context, sel ast.SelectionSet, obj *model.FermentationConfig) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, fermentationConfigImplementors)
 
 	out := graphql.NewFieldSet(fields)
 	var invalids uint32
 	for i, field := range fields {
 		switch field.Name {
 		case "__typename":
-			out.Values[i] = graphql.MarshalString("FermentationContainer")
-		case "name":
-			out.Values[i] = ec._FermentationContainer_name(ctx, field, obj)
+			out.Values[i] = graphql.MarshalString("FermentationConfig")
+		case "TargetTemp":
+			out.Values[i] = ec._FermentationConfig_TargetTemp(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "canHeat":
-			out.Values[i] = ec._FermentationContainer_canHeat(ctx, field, obj)
+		case "Hysteresis":
+			out.Values[i] = ec._FermentationConfig_Hysteresis(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "heating":
-			out.Values[i] = ec._FermentationContainer_heating(ctx, field, obj)
+		case "MaxReadingAgeSec":
+			out.Values[i] = ec._FermentationConfig_MaxReadingAgeSec(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "cooling":
-			out.Values[i] = ec._FermentationContainer_cooling(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "canCool":
-			out.Values[i] = ec._FermentationContainer_canCool(ctx, field, obj)
+		case "MinOutletDurationSec":
+			out.Values[i] = ec._FermentationConfig_MinOutletDurationSec(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2366,6 +2710,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "setFermentation":
+			out.Values[i] = ec._Mutation_setFermentation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2392,7 +2741,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "batches":
+		case "fermentations":
 			field := field
 			out.Concurrently(i, func() (res graphql.Marshaler) {
 				defer func() {
@@ -2400,7 +2749,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_batches(ctx, field)
+				res = ec._Query_fermentations(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -2680,11 +3029,34 @@ func (ec *executionContext) ___Type(ctx context.Context, sel ast.SelectionSet, o
 
 // region    ***************************** type.gotpl *****************************
 
-func (ec *executionContext) marshalNBatch2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatch(ctx context.Context, sel ast.SelectionSet, v model.Batch) graphql.Marshaler {
-	return ec._Batch(ctx, sel, &v)
+func (ec *executionContext) unmarshalNBatchState2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchState(ctx context.Context, v interface{}) (model.BatchState, error) {
+	var res model.BatchState
+	return res, res.UnmarshalGQL(v)
 }
 
-func (ec *executionContext) marshalNBatch2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Batch) graphql.Marshaler {
+func (ec *executionContext) marshalNBatchState2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchState(ctx context.Context, sel ast.SelectionSet, v model.BatchState) graphql.Marshaler {
+	return v
+}
+
+func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
+	return graphql.UnmarshalBoolean(v)
+}
+
+func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
+	res := graphql.MarshalBoolean(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) marshalNFermentation2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentation(ctx context.Context, sel ast.SelectionSet, v model.Fermentation) graphql.Marshaler {
+	return ec._Fermentation(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNFermentation2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Fermentation) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2708,7 +3080,7 @@ func (ec *executionContext) marshalNBatch2ᚕᚖgithubᚗcomᚋfledsboᚋgobrew�
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNBatch2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatch(ctx, sel, v[i])
+			ret[i] = ec.marshalNFermentation2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentation(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2721,37 +3093,14 @@ func (ec *executionContext) marshalNBatch2ᚕᚖgithubᚗcomᚋfledsboᚋgobrew�
 	return ret
 }
 
-func (ec *executionContext) marshalNBatch2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatch(ctx context.Context, sel ast.SelectionSet, v *model.Batch) graphql.Marshaler {
+func (ec *executionContext) marshalNFermentation2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentation(ctx context.Context, sel ast.SelectionSet, v *model.Fermentation) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
 		}
 		return graphql.Null
 	}
-	return ec._Batch(ctx, sel, v)
-}
-
-func (ec *executionContext) unmarshalNBatchState2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchState(ctx context.Context, v interface{}) (model.BatchState, error) {
-	var res model.BatchState
-	return res, res.UnmarshalGQL(v)
-}
-
-func (ec *executionContext) marshalNBatchState2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐBatchState(ctx context.Context, sel ast.SelectionSet, v model.BatchState) graphql.Marshaler {
-	return v
-}
-
-func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
-	return graphql.UnmarshalBoolean(v)
-}
-
-func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.SelectionSet, v bool) graphql.Marshaler {
-	res := graphql.MarshalBoolean(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
+	return ec._Fermentation(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalNFermentationMonitor2githubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐMonitorState(ctx context.Context, sel ast.SelectionSet, v hwinterface.MonitorState) graphql.Marshaler {
@@ -2803,6 +3152,34 @@ func (ec *executionContext) marshalNFermentationMonitor2ᚖgithubᚗcomᚋfledsb
 		return graphql.Null
 	}
 	return ec._FermentationMonitor(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
+	return graphql.UnmarshalFloat(v)
+}
+
+func (ec *executionContext) marshalNFloat2float64(ctx context.Context, sel ast.SelectionSet, v float64) graphql.Marshaler {
+	res := graphql.MarshalFloat(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
+}
+
+func (ec *executionContext) unmarshalNInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	res := graphql.MarshalInt(v)
+	if res == graphql.Null {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+	}
+	return res
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -3079,15 +3456,15 @@ func (ec *executionContext) marshalOFermentation2ᚖgithubᚗcomᚋfledsboᚋgob
 	return ec._Fermentation(ctx, sel, v)
 }
 
-func (ec *executionContext) marshalOFermentationContainer2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationContainer(ctx context.Context, sel ast.SelectionSet, v model.FermentationContainer) graphql.Marshaler {
-	return ec._FermentationContainer(ctx, sel, &v)
+func (ec *executionContext) marshalOFermentationConfig2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationConfig(ctx context.Context, sel ast.SelectionSet, v model.FermentationConfig) graphql.Marshaler {
+	return ec._FermentationConfig(ctx, sel, &v)
 }
 
-func (ec *executionContext) marshalOFermentationContainer2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationContainer(ctx context.Context, sel ast.SelectionSet, v *model.FermentationContainer) graphql.Marshaler {
+func (ec *executionContext) marshalOFermentationConfig2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationConfig(ctx context.Context, sel ast.SelectionSet, v *model.FermentationConfig) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._FermentationContainer(ctx, sel, v)
+	return ec._FermentationConfig(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalOFermentationMonitor2githubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐMonitorState(ctx context.Context, sel ast.SelectionSet, v hwinterface.MonitorState) graphql.Marshaler {
@@ -3122,6 +3499,53 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return ec.marshalOFloat2float64(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOInt2int(ctx context.Context, v interface{}) (int, error) {
+	return graphql.UnmarshalInt(v)
+}
+
+func (ec *executionContext) marshalOInt2int(ctx context.Context, sel ast.SelectionSet, v int) graphql.Marshaler {
+	return graphql.MarshalInt(v)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOInt2int(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOSetFermentationConfigInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx context.Context, v interface{}) (model.SetFermentationConfigInput, error) {
+	return ec.unmarshalInputSetFermentationConfigInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOSetFermentationConfigInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx context.Context, v interface{}) (*model.SetFermentationConfigInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOSetFermentationConfigInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) unmarshalOSetFermentationInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationInput(ctx context.Context, v interface{}) (model.SetFermentationInput, error) {
+	return ec.unmarshalInputSetFermentationInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOSetFermentationInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationInput(ctx context.Context, v interface{}) (*model.SetFermentationInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOSetFermentationInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOSetMonitorInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx context.Context, v interface{}) (model.SetMonitorInput, error) {

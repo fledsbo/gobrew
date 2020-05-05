@@ -15,7 +15,8 @@ type FermentationController struct {
 
 	HeatingOutlet   *hwinterface.Outlet
 	CoolingOutlet   *hwinterface.Outlet
-	AssignedMonitor string
+
+	AssignedMonitor 	  string
 
 	TargetTemp        float64
 	Hysteresis        float64
@@ -48,9 +49,10 @@ func NewFermentationController(name string, monitorC *hwinterface.MonitorControl
 
 	heatOutlet := hwinterface.NewDialOutlet(0, 0)
 	coolOutlet := hwinterface.NewDialOutlet(0, 1)
-
+	
 	out.HeatingOutlet = &heatOutlet
 	out.CoolingOutlet = &coolOutlet
+
 
 	go out.Run()
 	return

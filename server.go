@@ -24,6 +24,7 @@ func main() {
 	monitorController := hwinterface.NewMonitorController()
 	outletController := hwinterface.NewOutletController()
 	fermentationController := fermentation.NewFermentationController("Test", monitorController, outletController)
+	
 	go monitorController.Scan()
 
 	resolver := &graph.Resolver {		

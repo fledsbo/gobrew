@@ -17,16 +17,33 @@ type Batch struct {
 }
 
 type Fermentation struct {
-	Monitor   *hwinterface.MonitorState `json:"monitor"`
-	Container *FermentationContainer    `json:"container"`
+	Name    string                    `json:"name"`
+	Monitor *hwinterface.MonitorState `json:"monitor"`
+	CanHeat bool                      `json:"canHeat"`
+	Heating bool                      `json:"heating"`
+	Cooling bool                      `json:"cooling"`
+	CanCool bool                      `json:"canCool"`
+	Config  *FermentationConfig       `json:"config"`
 }
 
-type FermentationContainer struct {
-	Name    string `json:"name"`
-	CanHeat bool   `json:"canHeat"`
-	Heating bool   `json:"heating"`
-	Cooling bool   `json:"cooling"`
-	CanCool bool   `json:"canCool"`
+type FermentationConfig struct {
+	TargetTemp           float64 `json:"TargetTemp"`
+	Hysteresis           float64 `json:"Hysteresis"`
+	MaxReadingAgeSec     int     `json:"MaxReadingAgeSec"`
+	MinOutletDurationSec int     `json:"MinOutletDurationSec"`
+}
+
+type SetFermentationConfigInput struct {
+	TargetTemp           *float64 `json:"TargetTemp"`
+	Hysteresis           *float64 `json:"Hysteresis"`
+	MaxReadingAgeSec     *int     `json:"MaxReadingAgeSec"`
+	MinOutletDurationSec *int     `json:"MinOutletDurationSec"`
+}
+
+type SetFermentationInput struct {
+	Name    string                      `json:"name"`
+	Monitor *string                     `json:"monitor"`
+	Config  *SetFermentationConfigInput `json:"config"`
 }
 
 type SetMonitorInput struct {

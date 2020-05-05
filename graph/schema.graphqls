@@ -10,17 +10,22 @@ type FermentationMonitor {
   timestamp: String
 }
 
-type FermentationContainer {
+type FermentationConfig {
+	TargetTemp:       Float!
+	Hysteresis:       Float!
+	MaxReadingAgeSec:     Int!
+	MinOutletDurationSec: Int!
+}
+
+type Fermentation {
   name: String!
+  monitor: FermentationMonitor
   canHeat: Boolean!
   heating: Boolean!  
   cooling: Boolean!
   canCool: Boolean!
-}
 
-type Fermentation {
-  monitor: FermentationMonitor
-  container: FermentationContainer
+  config: FermentationConfig
 }
 
 type Batch {
@@ -42,13 +47,29 @@ input SetMonitorInput {
   gravity: Float
 }
 
+input SetFermentationConfigInput {
+	TargetTemp:       Float
+	Hysteresis:       Float
+	MaxReadingAgeSec:     Int
+	MinOutletDurationSec: Int  
+}
+
+input SetFermentationInput {
+  name: String!
+  monitor: String
+  config: SetFermentationConfigInput
+}
+
 type Query {
-  batches: [Batch!]!
+  fermentations: [Fermentation!]!
   monitors: [FermentationMonitor!]!
 }
 
+
+
 type Mutation {
   setMonitor(input: SetMonitorInput) : String!
+  setFermentation(input: SetFermentationInput) : String!
 }
 
 
