@@ -10,13 +10,12 @@ import (
 type FermentationController struct {
 	Name string
 
-	MonitorController *hwinterface.MonitorController
-	OutletController  *hwinterface.OutletController
+	monitorController *hwinterface.MonitorController
+	outletController  *hwinterface.OutletController
 
-	HeatingOutlet   *hwinterface.Outlet
-	CoolingOutlet   *hwinterface.Outlet
-
-	AssignedMonitor 	  string
+	AssignedCoolingOutlet string
+	AssignedHeatingOutlet string
+	AssignedMonitor       string
 
 	TargetTemp        float64
 	Hysteresis        float64
@@ -34,8 +33,8 @@ func NewFermentationController(name string, monitorC *hwinterface.MonitorControl
 	out = &FermentationController{
 		Name: name,
 
-		MonitorController: monitorC,
-		OutletController:  outletC,
+		monitorController: monitorC,
+		outletController:  outletC,
 
 		TargetTemp: 18.0,
 		Hysteresis: 0.5,
@@ -47,13 +46,6 @@ func NewFermentationController(name string, monitorC *hwinterface.MonitorControl
 		CurrentlyCooling: false,
 	}
 
-	heatOutlet := hwinterface.NewDialOutlet(0, 0)
-	coolOutlet := hwinterface.NewDialOutlet(0, 1)
-	
-	out.HeatingOutlet = &heatOutlet
-	out.CoolingOutlet = &coolOutlet
-
-
 	go out.Run()
 	return
 }
@@ -63,7 +55,7 @@ func (c *FermentationController) Check() {
 	found := false
 
 	if c.AssignedMonitor != "" {
-		monitorState, found = c.MonitorController.GetMonitor(c.AssignedMonitor)
+		monitorState, found = c.monitorController.GetMonitor(c.AssignedMonitor)
 	}
 
 	previousCooling := c.CurrentlyCooling
@@ -109,20 +101,24 @@ func (c *FermentationController) Check() {
 		}
 	}
 
+	heatingOutlet := c.outletController.GetOutlet(c.AssignedHeatingOutlet)
+
 	// We set the outlets every time, in case they missed a previous command
-	if c.HeatingOutlet != nil {
+	if heatingOutlet != nil {
 		if c.CurrentlyHeating {
-			c.OutletController.SwitchOn(*c.HeatingOutlet)
+			c.outletController.SwitchOn(*heatingOutlet)
 		} else {
-			c.OutletController.SwitchOff(*c.HeatingOutlet)
+			c.outletController.SwitchOff(*heatingOutlet)
 		}
 	}
 
-	if c.CoolingOutlet != nil {
+	coolingOutlet := c.outletController.GetOutlet(c.AssignedCoolingOutlet)
+
+	if coolingOutlet != nil {
 		if c.CurrentlyCooling {
-			c.OutletController.SwitchOn(*c.CoolingOutlet)
+			c.outletController.SwitchOn(*coolingOutlet)
 		} else {
-			c.OutletController.SwitchOff(*c.CoolingOutlet)
+			c.outletController.SwitchOff(*coolingOutlet)
 		}
 	}
 }

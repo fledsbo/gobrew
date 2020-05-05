@@ -5,17 +5,21 @@ import (
 	"github.com/warthog618/gpiod"
 )
 
+// Outlet represents one outlet config
 type Outlet struct {
+	Name        string
 	CodeOn      uint64
 	CodeOff     uint64
 	Protocol    uint
 	PulseLength uint
 }
 
+// OutletController maintains a list of configured controllers and the interface to switch them on and off
 type OutletController struct {
 	chip        *gpiod.Chip
 	offset      int
 	transmitter *gpio.Transmitter
+	Outlets     map[string]Outlet
 }
 
 func encode(str []byte) (out uint64) {
@@ -33,12 +37,26 @@ func encode(str []byte) (out uint64) {
 	return
 }
 
-func NewDialOutlet(group int, id int) Outlet {
-	return Outlet{
+// AddDialOutlet adds a dial-type outlet to the controller
+func (c *OutletController) AddDialOutlet(name string, group int, id int) Outlet {
+	outlet := Outlet{
+		Name:        name,
 		Protocol:    0,
 		PulseLength: 350,
 		CodeOn:      encode(dialCode(group, id, true)),
 		CodeOff:     encode(dialCode(group, id, false)),
+	}
+
+	c.Outlets[name] = outlet
+	return outlet
+}
+
+func (c *OutletController) GetOutlet(name string) *Outlet {
+	outlet, found := c.Outlets[name]
+	if found {
+		return &outlet
+	} else {
+		return nil
 	}
 }
 
@@ -52,6 +70,7 @@ func dialCode(group int, id int, on bool) (out []byte) {
 	return
 }
 
+// NewOutletController creates a new OutletController
 func NewOutletController() (out *OutletController) {
 	out = new(OutletController)
 	chip, err := gpiod.NewChip("gpiochip0")
@@ -66,6 +85,8 @@ func NewOutletController() (out *OutletController) {
 		panic(err)
 	}
 	out.transmitter = transmitter
+
+	out.Outlets = make(map[string]Outlet)
 	return
 }
 

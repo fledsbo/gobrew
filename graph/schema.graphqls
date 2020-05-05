@@ -41,6 +41,17 @@ enum BatchState {
   CONDITIONING,
 }
 
+type Outlet {
+  name: String!
+}
+
+type Query {
+  fermentations: [Fermentation!]!
+  monitors: [FermentationMonitor!]!
+  outlets: [Outlet!]!
+}
+
+
 input SetMonitorInput {
   name: String!
   temperature: Float
@@ -57,19 +68,21 @@ input SetFermentationConfigInput {
 input SetFermentationInput {
   name: String!
   monitor: String
+  heatingOutlet: String
+  coolingOutlet: String
   config: SetFermentationConfigInput
 }
 
-type Query {
-  fermentations: [Fermentation!]!
-  monitors: [FermentationMonitor!]!
+input SetupDialOutletInput {
+  name: String!
+  group: Int!
+  outlet: Int!
 }
-
-
 
 type Mutation {
   setMonitor(input: SetMonitorInput) : String!
   setFermentation(input: SetFermentationInput) : String!
+  setupDialOutlet(input: SetupDialOutletInput) : String!
 }
 
 

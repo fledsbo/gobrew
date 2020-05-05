@@ -7,10 +7,10 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/fledsbo/gobrew/fermentation"
 	"github.com/fledsbo/gobrew/graph"
 	"github.com/fledsbo/gobrew/graph/generated"
 	"github.com/fledsbo/gobrew/hwinterface"
+	"github.com/fledsbo/gobrew/storage"
 )
 
 const defaultPort = "8080"
@@ -23,14 +23,27 @@ func main() {
 
 	monitorController := hwinterface.NewMonitorController()
 	outletController := hwinterface.NewOutletController()
-	fermentationController := fermentation.NewFermentationController("Test", monitorController, outletController)
-	
+
+	storage := storage.NewStorage()
+	storage.MonitorController = monitorController
+	storage.OutletController = outletController
+
+	err := storage.LoadOutlets()
+	if err != nil {
+		panic(err)
+	}
+	fermentations, err := storage.LoadFermentations()
+	if err != nil {
+		panic(err)
+	}
+
 	go monitorController.Scan()
 
-	resolver := &graph.Resolver {		
-		MonitorController: monitorController,
-		OutletController: outletController,
-		FermentationControllers: []*fermentation.FermentationController{ fermentationController },
+	resolver := &graph.Resolver{
+		MonitorController:       monitorController,
+		OutletController:        outletController,
+		FermentationControllers: fermentations,
+		Storage:                 storage,
 	}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

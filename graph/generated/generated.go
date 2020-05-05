@@ -79,11 +79,17 @@ type ComplexityRoot struct {
 	Mutation struct {
 		SetFermentation func(childComplexity int, input *model.SetFermentationInput) int
 		SetMonitor      func(childComplexity int, input *model.SetMonitorInput) int
+		SetupDialOutlet func(childComplexity int, input *model.SetupDialOutletInput) int
+	}
+
+	Outlet struct {
+		Name func(childComplexity int) int
 	}
 
 	Query struct {
 		Fermentations func(childComplexity int) int
 		Monitors      func(childComplexity int) int
+		Outlets       func(childComplexity int) int
 	}
 }
 
@@ -93,10 +99,12 @@ type FermentationMonitorResolver interface {
 type MutationResolver interface {
 	SetMonitor(ctx context.Context, input *model.SetMonitorInput) (string, error)
 	SetFermentation(ctx context.Context, input *model.SetFermentationInput) (string, error)
+	SetupDialOutlet(ctx context.Context, input *model.SetupDialOutletInput) (string, error)
 }
 type QueryResolver interface {
 	Fermentations(ctx context.Context) ([]*model.Fermentation, error)
 	Monitors(ctx context.Context) ([]*hwinterface.MonitorState, error)
+	Outlets(ctx context.Context) ([]*hwinterface.Outlet, error)
 }
 
 type executableSchema struct {
@@ -271,6 +279,25 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.SetMonitor(childComplexity, args["input"].(*model.SetMonitorInput)), true
 
+	case "Mutation.setupDialOutlet":
+		if e.complexity.Mutation.SetupDialOutlet == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setupDialOutlet_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetupDialOutlet(childComplexity, args["input"].(*model.SetupDialOutletInput)), true
+
+	case "Outlet.name":
+		if e.complexity.Outlet.Name == nil {
+			break
+		}
+
+		return e.complexity.Outlet.Name(childComplexity), true
+
 	case "Query.fermentations":
 		if e.complexity.Query.Fermentations == nil {
 			break
@@ -284,6 +311,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Monitors(childComplexity), true
+
+	case "Query.outlets":
+		if e.complexity.Query.Outlets == nil {
+			break
+		}
+
+		return e.complexity.Query.Outlets(childComplexity), true
 
 	}
 	return 0, false
@@ -392,6 +426,17 @@ enum BatchState {
   CONDITIONING,
 }
 
+type Outlet {
+  name: String!
+}
+
+type Query {
+  fermentations: [Fermentation!]!
+  monitors: [FermentationMonitor!]!
+  outlets: [Outlet!]!
+}
+
+
 input SetMonitorInput {
   name: String!
   temperature: Float
@@ -408,19 +453,21 @@ input SetFermentationConfigInput {
 input SetFermentationInput {
   name: String!
   monitor: String
+  heatingOutlet: String
+  coolingOutlet: String
   config: SetFermentationConfigInput
 }
 
-type Query {
-  fermentations: [Fermentation!]!
-  monitors: [FermentationMonitor!]!
+input SetupDialOutletInput {
+  name: String!
+  group: Int!
+  outlet: Int!
 }
-
-
 
 type Mutation {
   setMonitor(input: SetMonitorInput) : String!
   setFermentation(input: SetFermentationInput) : String!
+  setupDialOutlet(input: SetupDialOutletInput) : String!
 }
 
 
@@ -452,6 +499,20 @@ func (ec *executionContext) field_Mutation_setMonitor_args(ctx context.Context, 
 	var arg0 *model.SetMonitorInput
 	if tmp, ok := rawArgs["input"]; ok {
 		arg0, err = ec.unmarshalOSetMonitorInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_setupDialOutlet_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SetupDialOutletInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOSetupDialOutletInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetupDialOutletInput(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1220,6 +1281,81 @@ func (ec *executionContext) _Mutation_setFermentation(ctx context.Context, field
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Mutation_setupDialOutlet(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_setupDialOutlet_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetupDialOutlet(rctx, args["input"].(*model.SetupDialOutletInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Outlet_name(ctx context.Context, field graphql.CollectedField, obj *hwinterface.Outlet) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Outlet",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query_fermentations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1286,6 +1422,40 @@ func (ec *executionContext) _Query_monitors(ctx context.Context, field graphql.C
 	res := resTmp.([]*hwinterface.MonitorState)
 	fc.Result = res
 	return ec.marshalNFermentationMonitor2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐMonitorStateᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_outlets(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Outlets(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*hwinterface.Outlet)
+	fc.Result = res
+	return ec.marshalNOutlet2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutletᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2466,6 +2636,18 @@ func (ec *executionContext) unmarshalInputSetFermentationInput(ctx context.Conte
 			if err != nil {
 				return it, err
 			}
+		case "heatingOutlet":
+			var err error
+			it.HeatingOutlet, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "coolingOutlet":
+			var err error
+			it.CoolingOutlet, err = ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
 		case "config":
 			var err error
 			it.Config, err = ec.unmarshalOSetFermentationConfigInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx, v)
@@ -2499,6 +2681,36 @@ func (ec *executionContext) unmarshalInputSetMonitorInput(ctx context.Context, o
 		case "gravity":
 			var err error
 			it.Gravity, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
+func (ec *executionContext) unmarshalInputSetupDialOutletInput(ctx context.Context, obj interface{}) (model.SetupDialOutletInput, error) {
+	var it model.SetupDialOutletInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "group":
+			var err error
+			it.Group, err = ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "outlet":
+			var err error
+			it.Outlet, err = ec.unmarshalNInt2int(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2715,6 +2927,38 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
+		case "setupDialOutlet":
+			out.Values[i] = ec._Mutation_setupDialOutlet(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var outletImplementors = []string{"Outlet"}
+
+func (ec *executionContext) _Outlet(ctx context.Context, sel ast.SelectionSet, obj *hwinterface.Outlet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, outletImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Outlet")
+		case "name":
+			out.Values[i] = ec._Outlet_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2764,6 +3008,20 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_monitors(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "outlets":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_outlets(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
@@ -3182,6 +3440,57 @@ func (ec *executionContext) marshalNInt2int(ctx context.Context, sel ast.Selecti
 	return res
 }
 
+func (ec *executionContext) marshalNOutlet2githubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutlet(ctx context.Context, sel ast.SelectionSet, v hwinterface.Outlet) graphql.Marshaler {
+	return ec._Outlet(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNOutlet2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutletᚄ(ctx context.Context, sel ast.SelectionSet, v []*hwinterface.Outlet) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNOutlet2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutlet(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
+}
+
+func (ec *executionContext) marshalNOutlet2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutlet(ctx context.Context, sel ast.SelectionSet, v *hwinterface.Outlet) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Outlet(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -3557,6 +3866,18 @@ func (ec *executionContext) unmarshalOSetMonitorInput2ᚖgithubᚗcomᚋfledsbo�
 		return nil, nil
 	}
 	res, err := ec.unmarshalOSetMonitorInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx, v)
+	return &res, err
+}
+
+func (ec *executionContext) unmarshalOSetupDialOutletInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetupDialOutletInput(ctx context.Context, v interface{}) (model.SetupDialOutletInput, error) {
+	return ec.unmarshalInputSetupDialOutletInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOSetupDialOutletInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetupDialOutletInput(ctx context.Context, v interface{}) (*model.SetupDialOutletInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOSetupDialOutletInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetupDialOutletInput(ctx, v)
 	return &res, err
 }
 

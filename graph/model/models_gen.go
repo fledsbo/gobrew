@@ -41,15 +41,23 @@ type SetFermentationConfigInput struct {
 }
 
 type SetFermentationInput struct {
-	Name    string                      `json:"name"`
-	Monitor *string                     `json:"monitor"`
-	Config  *SetFermentationConfigInput `json:"config"`
+	Name          string                      `json:"name"`
+	Monitor       *string                     `json:"monitor"`
+	HeatingOutlet *string                     `json:"heatingOutlet"`
+	CoolingOutlet *string                     `json:"coolingOutlet"`
+	Config        *SetFermentationConfigInput `json:"config"`
 }
 
 type SetMonitorInput struct {
 	Name        string   `json:"name"`
 	Temperature *float64 `json:"temperature"`
 	Gravity     *float64 `json:"gravity"`
+}
+
+type SetupDialOutletInput struct {
+	Name   string `json:"name"`
+	Group  int    `json:"group"`
+	Outlet int    `json:"outlet"`
 }
 
 type BatchState string

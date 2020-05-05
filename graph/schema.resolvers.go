@@ -7,12 +7,11 @@ import (
 	"context"
 	"fmt"
 	"time"
-	"errors"
 
+	"github.com/fledsbo/gobrew/fermentation"
 	"github.com/fledsbo/gobrew/graph/generated"
 	"github.com/fledsbo/gobrew/graph/model"
 	"github.com/fledsbo/gobrew/hwinterface"
-	"github.com/fledsbo/gobrew/fermentation"
 )
 
 func (r *fermentationMonitorResolver) Timestamp(ctx context.Context, obj *hwinterface.MonitorState) (*string, error) {
@@ -32,13 +31,21 @@ func (r *mutationResolver) SetMonitor(ctx context.Context, input *model.SetMonit
 
 func (r *mutationResolver) SetFermentation(ctx context.Context, input *model.SetFermentationInput) (string, error) {
 	var found *fermentation.FermentationController
-	for _,ferm := range r.FermentationControllers {
+	for _, ferm := range r.FermentationControllers {
 		if ferm.Name == input.Name {
-			found = ferm			
+			found = ferm
 		} else {
-			if (input.Monitor != nil && ferm.AssignedMonitor == *input.Monitor) {
-				return "", errors.New(fmt.Sprintf("Monitor %s already used by %s", *input.Monitor, ferm.Name))
-			}						
+			if input.Monitor != nil && ferm.AssignedMonitor == *input.Monitor {
+				return "", fmt.Errorf("Monitor %s already used by %s", *input.Monitor, ferm.Name)
+			}
+
+			if input.HeatingOutlet != nil && ferm.AssignedCoolingOutlet == *input.HeatingOutlet || ferm.AssignedHeatingOutlet == *input.HeatingOutlet {
+				return "", fmt.Errorf("Outlet %s already used by %s", *input.HeatingOutlet, ferm.Name)
+			}
+
+			if input.CoolingOutlet != nil && ferm.AssignedCoolingOutlet == *input.CoolingOutlet || ferm.AssignedHeatingOutlet == *input.CoolingOutlet {
+				return "", fmt.Errorf("Outlet %s already used by %s", *input.CoolingOutlet, ferm.Name)
+			}
 		}
 	}
 
@@ -51,46 +58,68 @@ func (r *mutationResolver) SetFermentation(ctx context.Context, input *model.Set
 		found.AssignedMonitor = *input.Monitor
 	}
 
+	if input.HeatingOutlet != nil {
+		if found.AssignedCoolingOutlet == *input.HeatingOutlet {
+			return "", fmt.Errorf("Cannot use same outlet %s for heating and cooling", *input.HeatingOutlet)
+		}
+		found.AssignedHeatingOutlet = *input.HeatingOutlet
+	}
+
+	if input.CoolingOutlet != nil {
+		if found.AssignedHeatingOutlet == *input.CoolingOutlet {
+			return "", fmt.Errorf("Cannot use same outlet %s for heating and cooling", *input.CoolingOutlet)
+		}
+		found.AssignedCoolingOutlet = *input.CoolingOutlet
+	}
+
 	if input.Config != nil {
-		if (input.Config.TargetTemp != nil) {
+		if input.Config.TargetTemp != nil {
 			found.TargetTemp = *input.Config.TargetTemp
 		}
-		if (input.Config.Hysteresis != nil) {
+		if input.Config.Hysteresis != nil {
 			found.Hysteresis = *input.Config.Hysteresis
 		}
-		if (input.Config.MaxReadingAgeSec != nil) {
+		if input.Config.MaxReadingAgeSec != nil {
 			found.MaxReadingAge = time.Duration(*input.Config.MaxReadingAgeSec) * time.Second
 		}
-		if (input.Config.MinOutletDurationSec != nil) {
+		if input.Config.MinOutletDurationSec != nil {
 			found.MinOutletDuration = time.Duration(*input.Config.MinOutletDurationSec) * time.Second
 		}
 	}
 
-	return found.Name, nil
+	err := r.Storage.StoreFermentations(r.FermentationControllers)
+
+	return found.Name, err
+}
+
+func (r *mutationResolver) SetupDialOutlet(ctx context.Context, input *model.SetupDialOutletInput) (string, error) {
+	r.OutletController.AddDialOutlet(input.Name, input.Group, input.Outlet)
+	err := r.Storage.StoreOutlets()
+	return input.Name, err
 }
 
 func (r *queryResolver) Fermentations(ctx context.Context) ([]*model.Fermentation, error) {
 	out := make([]*model.Fermentation, 0, len(r.FermentationControllers))
 	for _, fc := range r.FermentationControllers {
-		f := model.Fermentation {
-			Name: fc.Name,
-			CanHeat: fc.HeatingOutlet != nil,
+		f := model.Fermentation{
+			Name:    fc.Name,
+			CanHeat: fc.AssignedHeatingOutlet != "",
 			Heating: fc.CurrentlyHeating,
-			CanCool: fc.CoolingOutlet != nil,
+			CanCool: fc.AssignedCoolingOutlet != "",
 			Cooling: fc.CurrentlyCooling,
 		}
-		config := model.FermentationConfig {
-			TargetTemp: fc.TargetTemp,
-			Hysteresis: fc.Hysteresis,
-			MaxReadingAgeSec: int(fc.MaxReadingAge.Seconds()),
+		config := model.FermentationConfig{
+			TargetTemp:           fc.TargetTemp,
+			Hysteresis:           fc.Hysteresis,
+			MaxReadingAgeSec:     int(fc.MaxReadingAge.Seconds()),
 			MinOutletDurationSec: int(fc.MinOutletDuration.Seconds()),
-		}		
+		}
 		f.Config = &config
 		monitor, found := r.MonitorController.GetMonitor(fc.AssignedMonitor)
 		if found {
 			f.Monitor = &monitor
 		}
-		out = append(out, &f)		
+		out = append(out, &f)
 	}
 	return out, nil
 }
@@ -98,6 +127,15 @@ func (r *queryResolver) Fermentations(ctx context.Context) ([]*model.Fermentatio
 func (r *queryResolver) Monitors(ctx context.Context) ([]*hwinterface.MonitorState, error) {
 	mons := r.MonitorController.GetMonitors()
 	return mons, nil
+}
+
+func (r *queryResolver) Outlets(ctx context.Context) ([]*hwinterface.Outlet, error) {
+	out := make([]*hwinterface.Outlet, 0, len(r.OutletController.Outlets))
+	for _, outlet := range r.OutletController.Outlets {
+		o := outlet
+		out = append(out, &o)
+	}
+	return out, nil
 }
 
 // FermentationMonitor returns generated.FermentationMonitorResolver implementation.
@@ -114,4 +152,3 @@ func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 type fermentationMonitorResolver struct{ *Resolver }
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
-

@@ -57,3 +57,6 @@ models:
 
   FermentationMonitor:
     model: github.com/fledsbo/gobrew/hwinterface.MonitorState
+
+  Outlet:
+    model: github.com/fledsbo/gobrew/hwinterface.Outlet
