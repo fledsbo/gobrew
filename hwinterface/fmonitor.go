@@ -5,8 +5,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/paypal/gatt"
-	"github.com/paypal/gatt/examples/option"
+	"github.com/fledsbo/gatt"
+	"github.com/fledsbo/gatt/examples/option"
 )
 
 type MonitorState struct {
