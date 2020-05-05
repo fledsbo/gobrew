@@ -37,6 +37,7 @@ type Config struct {
 
 type ResolverRoot interface {
 	FermentationMonitor() FermentationMonitorResolver
+	Mutation() MutationResolver
 	Query() QueryResolver
 }
 
@@ -46,15 +47,12 @@ type DirectiveRoot struct {
 type ComplexityRoot struct {
 	Batch struct {
 		Fermentation func(childComplexity int) int
-		ID           func(childComplexity int) int
 		Name         func(childComplexity int) int
-		Recipe       func(childComplexity int) int
 		State        func(childComplexity int) int
 	}
 
 	Fermentation struct {
 		Container func(childComplexity int) int
-		ID        func(childComplexity int) int
 		Monitor   func(childComplexity int) int
 	}
 
@@ -63,34 +61,32 @@ type ComplexityRoot struct {
 		CanHeat func(childComplexity int) int
 		Cooling func(childComplexity int) int
 		Heating func(childComplexity int) int
-		ID      func(childComplexity int) int
 		Name    func(childComplexity int) int
 	}
 
 	FermentationMonitor struct {
 		Gravity     func(childComplexity int) int
-		ID          func(childComplexity int) int
 		Name        func(childComplexity int) int
 		Temperature func(childComplexity int) int
 		Timestamp   func(childComplexity int) int
 		Type        func(childComplexity int) int
 	}
 
+	Mutation struct {
+		SetMonitor func(childComplexity int, input *model.SetMonitorInput) int
+	}
+
 	Query struct {
 		Batches  func(childComplexity int) int
 		Monitors func(childComplexity int) int
 	}
-
-	Recipe struct {
-		ID   func(childComplexity int) int
-		Name func(childComplexity int) int
-	}
 }
 
 type FermentationMonitorResolver interface {
-	ID(ctx context.Context, obj *hwinterface.MonitorState) (string, error)
-
 	Timestamp(ctx context.Context, obj *hwinterface.MonitorState) (*string, error)
+}
+type MutationResolver interface {
+	SetMonitor(ctx context.Context, input *model.SetMonitorInput) (string, error)
 }
 type QueryResolver interface {
 	Batches(ctx context.Context) ([]*model.Batch, error)
@@ -119,26 +115,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Batch.Fermentation(childComplexity), true
 
-	case "Batch.id":
-		if e.complexity.Batch.ID == nil {
-			break
-		}
-
-		return e.complexity.Batch.ID(childComplexity), true
-
 	case "Batch.name":
 		if e.complexity.Batch.Name == nil {
 			break
 		}
 
 		return e.complexity.Batch.Name(childComplexity), true
-
-	case "Batch.recipe":
-		if e.complexity.Batch.Recipe == nil {
-			break
-		}
-
-		return e.complexity.Batch.Recipe(childComplexity), true
 
 	case "Batch.state":
 		if e.complexity.Batch.State == nil {
@@ -153,13 +135,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Fermentation.Container(childComplexity), true
-
-	case "Fermentation.id":
-		if e.complexity.Fermentation.ID == nil {
-			break
-		}
-
-		return e.complexity.Fermentation.ID(childComplexity), true
 
 	case "Fermentation.monitor":
 		if e.complexity.Fermentation.Monitor == nil {
@@ -196,13 +171,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FermentationContainer.Heating(childComplexity), true
 
-	case "FermentationContainer.id":
-		if e.complexity.FermentationContainer.ID == nil {
-			break
-		}
-
-		return e.complexity.FermentationContainer.ID(childComplexity), true
-
 	case "FermentationContainer.name":
 		if e.complexity.FermentationContainer.Name == nil {
 			break
@@ -216,13 +184,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.FermentationMonitor.Gravity(childComplexity), true
-
-	case "FermentationMonitor.id":
-		if e.complexity.FermentationMonitor.ID == nil {
-			break
-		}
-
-		return e.complexity.FermentationMonitor.ID(childComplexity), true
 
 	case "FermentationMonitor.name":
 		if e.complexity.FermentationMonitor.Name == nil {
@@ -252,6 +213,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.FermentationMonitor.Type(childComplexity), true
 
+	case "Mutation.setMonitor":
+		if e.complexity.Mutation.SetMonitor == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_setMonitor_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.SetMonitor(childComplexity, args["input"].(*model.SetMonitorInput)), true
+
 	case "Query.batches":
 		if e.complexity.Query.Batches == nil {
 			break
@@ -265,20 +238,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Monitors(childComplexity), true
-
-	case "Recipe.id":
-		if e.complexity.Recipe.ID == nil {
-			break
-		}
-
-		return e.complexity.Recipe.ID(childComplexity), true
-
-	case "Recipe.name":
-		if e.complexity.Recipe.Name == nil {
-			break
-		}
-
-		return e.complexity.Recipe.Name(childComplexity), true
 
 	}
 	return 0, false
@@ -297,6 +256,20 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 			}
 			first = false
 			data := ec._Query(ctx, rc.Operation.SelectionSet)
+			var buf bytes.Buffer
+			data.MarshalGQL(&buf)
+
+			return &graphql.Response{
+				Data: buf.Bytes(),
+			}
+		}
+	case ast.Mutation:
+		return func(ctx context.Context) *graphql.Response {
+			if !first {
+				return nil
+			}
+			first = false
+			data := ec._Mutation(ctx, rc.Operation.SelectionSet)
 			var buf bytes.Buffer
 			data.MarshalGQL(&buf)
 
@@ -335,7 +308,6 @@ var sources = []*ast.Source{
 # https://gqlgen.com/getting-started/
 
 type FermentationMonitor {
-  id: ID!
   name: String!
   type: String!
   temperature: Float
@@ -344,7 +316,6 @@ type FermentationMonitor {
 }
 
 type FermentationContainer {
-  id: ID!
   name: String!
   canHeat: Boolean!
   heating: Boolean!  
@@ -353,15 +324,12 @@ type FermentationContainer {
 }
 
 type Fermentation {
-  id: ID!
   monitor: FermentationMonitor
   container: FermentationContainer
 }
 
 type Batch {
-  id: ID!
   name: String!
-  recipe: Recipe
   state: BatchState!
   fermentation: Fermentation
 }
@@ -373,14 +341,19 @@ enum BatchState {
   CONDITIONING,
 }
 
-type Recipe {
-  id: ID!
+input SetMonitorInput {
   name: String!
+  temperature: Float
+  gravity: Float
 }
 
 type Query {
   batches: [Batch!]!
   monitors: [FermentationMonitor!]!
+}
+
+type Mutation {
+  setMonitor(input: SetMonitorInput) : String!
 }
 
 
@@ -391,6 +364,20 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_setMonitor_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.SetMonitorInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalOSetMonitorInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -442,40 +429,6 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Batch_id(ctx context.Context, field graphql.CollectedField, obj *model.Batch) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Batch",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Batch_name(ctx context.Context, field graphql.CollectedField, obj *model.Batch) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -508,37 +461,6 @@ func (ec *executionContext) _Batch_name(ctx context.Context, field graphql.Colle
 	res := resTmp.(string)
 	fc.Result = res
 	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Batch_recipe(ctx context.Context, field graphql.CollectedField, obj *model.Batch) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Batch",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Recipe, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		return graphql.Null
-	}
-	res := resTmp.(*model.Recipe)
-	fc.Result = res
-	return ec.marshalORecipe2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRecipe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Batch_state(ctx context.Context, field graphql.CollectedField, obj *model.Batch) (ret graphql.Marshaler) {
@@ -606,40 +528,6 @@ func (ec *executionContext) _Batch_fermentation(ctx context.Context, field graph
 	return ec.marshalOFermentation2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentation(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Fermentation_id(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Fermentation",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _Fermentation_monitor(ctx context.Context, field graphql.CollectedField, obj *model.Fermentation) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -700,40 +588,6 @@ func (ec *executionContext) _Fermentation_container(ctx context.Context, field g
 	res := resTmp.(*model.FermentationContainer)
 	fc.Result = res
 	return ec.marshalOFermentationContainer2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐFermentationContainer(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _FermentationContainer_id(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "FermentationContainer",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _FermentationContainer_name(ctx context.Context, field graphql.CollectedField, obj *model.FermentationContainer) (ret graphql.Marshaler) {
@@ -906,40 +760,6 @@ func (ec *executionContext) _FermentationContainer_canCool(ctx context.Context, 
 	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _FermentationMonitor_id(ctx context.Context, field graphql.CollectedField, obj *hwinterface.MonitorState) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "FermentationMonitor",
-		Field:    field,
-		Args:     nil,
-		IsMethod: true,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.FermentationMonitor().ID(rctx, obj)
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
 func (ec *executionContext) _FermentationMonitor_name(ctx context.Context, field graphql.CollectedField, obj *hwinterface.MonitorState) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1034,9 +854,9 @@ func (ec *executionContext) _FermentationMonitor_temperature(ctx context.Context
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(*float64)
 	fc.Result = res
-	return ec.marshalOFloat2float64(ctx, field.Selections, res)
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _FermentationMonitor_gravity(ctx context.Context, field graphql.CollectedField, obj *hwinterface.MonitorState) (ret graphql.Marshaler) {
@@ -1065,9 +885,9 @@ func (ec *executionContext) _FermentationMonitor_gravity(ctx context.Context, fi
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(float64)
+	res := resTmp.(*float64)
 	fc.Result = res
-	return ec.marshalOFloat2float64(ctx, field.Selections, res)
+	return ec.marshalOFloat2ᚖfloat64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _FermentationMonitor_timestamp(ctx context.Context, field graphql.CollectedField, obj *hwinterface.MonitorState) (ret graphql.Marshaler) {
@@ -1099,6 +919,47 @@ func (ec *executionContext) _FermentationMonitor_timestamp(ctx context.Context, 
 	res := resTmp.(*string)
 	fc.Result = res
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_setMonitor(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_setMonitor_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().SetMonitor(rctx, args["input"].(*model.SetMonitorInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_batches(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1236,74 +1097,6 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Recipe_id(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Recipe",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.ID, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNID2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) _Recipe_name(ctx context.Context, field graphql.CollectedField, obj *model.Recipe) (ret graphql.Marshaler) {
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	fc := &graphql.FieldContext{
-		Object:   "Recipe",
-		Field:    field,
-		Args:     nil,
-		IsMethod: false,
-	}
-
-	ctx = graphql.WithFieldContext(ctx, fc)
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Name, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -2361,6 +2154,36 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputSetMonitorInput(ctx context.Context, obj interface{}) (model.SetMonitorInput, error) {
+	var it model.SetMonitorInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "temperature":
+			var err error
+			it.Temperature, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "gravity":
+			var err error
+			it.Gravity, err = ec.unmarshalOFloat2ᚖfloat64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2380,18 +2203,11 @@ func (ec *executionContext) _Batch(ctx context.Context, sel ast.SelectionSet, ob
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Batch")
-		case "id":
-			out.Values[i] = ec._Batch_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "name":
 			out.Values[i] = ec._Batch_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
-		case "recipe":
-			out.Values[i] = ec._Batch_recipe(ctx, field, obj)
 		case "state":
 			out.Values[i] = ec._Batch_state(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -2421,11 +2237,6 @@ func (ec *executionContext) _Fermentation(ctx context.Context, sel ast.Selection
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Fermentation")
-		case "id":
-			out.Values[i] = ec._Fermentation_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "monitor":
 			out.Values[i] = ec._Fermentation_monitor(ctx, field, obj)
 		case "container":
@@ -2452,11 +2263,6 @@ func (ec *executionContext) _FermentationContainer(ctx context.Context, sel ast.
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("FermentationContainer")
-		case "id":
-			out.Values[i] = ec._FermentationContainer_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		case "name":
 			out.Values[i] = ec._FermentationContainer_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -2504,20 +2310,6 @@ func (ec *executionContext) _FermentationMonitor(ctx context.Context, sel ast.Se
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("FermentationMonitor")
-		case "id":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._FermentationMonitor_id(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
 		case "name":
 			out.Values[i] = ec._FermentationMonitor_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -2543,6 +2335,37 @@ func (ec *executionContext) _FermentationMonitor(ctx context.Context, sel ast.Se
 				res = ec._FermentationMonitor_timestamp(ctx, field, obj)
 				return res
 			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var mutationImplementors = []string{"Mutation"}
+
+func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, mutationImplementors)
+
+	ctx = graphql.WithFieldContext(ctx, &graphql.FieldContext{
+		Object: "Mutation",
+	})
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Mutation")
+		case "setMonitor":
+			out.Values[i] = ec._Mutation_setMonitor(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2601,38 +2424,6 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
-		default:
-			panic("unknown field " + strconv.Quote(field.Name))
-		}
-	}
-	out.Dispatch()
-	if invalids > 0 {
-		return graphql.Null
-	}
-	return out
-}
-
-var recipeImplementors = []string{"Recipe"}
-
-func (ec *executionContext) _Recipe(ctx context.Context, sel ast.SelectionSet, obj *model.Recipe) graphql.Marshaler {
-	fields := graphql.CollectFields(ec.OperationContext, sel, recipeImplementors)
-
-	out := graphql.NewFieldSet(fields)
-	var invalids uint32
-	for i, field := range fields {
-		switch field.Name {
-		case "__typename":
-			out.Values[i] = graphql.MarshalString("Recipe")
-		case "id":
-			out.Values[i] = ec._Recipe_id(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
-		case "name":
-			out.Values[i] = ec._Recipe_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3014,20 +2805,6 @@ func (ec *executionContext) marshalNFermentationMonitor2ᚖgithubᚗcomᚋfledsb
 	return ec._FermentationMonitor(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalNID2string(ctx context.Context, v interface{}) (string, error) {
-	return graphql.UnmarshalID(v)
-}
-
-func (ec *executionContext) marshalNID2string(ctx context.Context, sel ast.SelectionSet, v string) graphql.Marshaler {
-	res := graphql.MarshalID(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "must not be null")
-		}
-	}
-	return res
-}
-
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
 	return graphql.UnmarshalString(v)
 }
@@ -3332,15 +3109,31 @@ func (ec *executionContext) marshalOFloat2float64(ctx context.Context, sel ast.S
 	return graphql.MarshalFloat(v)
 }
 
-func (ec *executionContext) marshalORecipe2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v model.Recipe) graphql.Marshaler {
-	return ec._Recipe(ctx, sel, &v)
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOFloat2float64(ctx, v)
+	return &res, err
 }
 
-func (ec *executionContext) marshalORecipe2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRecipe(ctx context.Context, sel ast.SelectionSet, v *model.Recipe) graphql.Marshaler {
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
-	return ec._Recipe(ctx, sel, v)
+	return ec.marshalOFloat2float64(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalOSetMonitorInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx context.Context, v interface{}) (model.SetMonitorInput, error) {
+	return ec.unmarshalInputSetMonitorInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalOSetMonitorInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx context.Context, v interface{}) (*model.SetMonitorInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalOSetMonitorInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetMonitorInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

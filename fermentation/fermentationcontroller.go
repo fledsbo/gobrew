@@ -67,19 +67,19 @@ func (c *FermentationController) Check() {
 	previousCooling := c.CurrentlyCooling
 	previousHeating := c.CurrentlyHeating
 
-	if found && time.Now().Sub(monitorState.Timestamp) < c.MaxReadingAge {
-		if monitorState.Temperature > c.TargetTemp &&
+	if found && monitorState.Temperature != nil && time.Now().Sub(monitorState.Timestamp) < c.MaxReadingAge {
+		if *monitorState.Temperature > c.TargetTemp &&
 			time.Now().Sub(c.LastStateChange) > c.MinOutletDuration {
 			c.CurrentlyHeating = false
-			if monitorState.Temperature > (c.TargetTemp + c.Hysteresis) {
+			if *monitorState.Temperature > (c.TargetTemp + c.Hysteresis) {
 				c.CurrentlyCooling = true
 			}
 			c.LastStateChange = time.Now()
 		}
-		if monitorState.Temperature < c.TargetTemp &&
+		if *monitorState.Temperature < c.TargetTemp &&
 			time.Now().Sub(c.LastStateChange) > c.MinOutletDuration {
 			c.CurrentlyCooling = false
-			if monitorState.Temperature < (c.TargetTemp - c.Hysteresis) {
+			if *monitorState.Temperature < (c.TargetTemp - c.Hysteresis) {
 				c.CurrentlyHeating = true
 			}
 			c.LastStateChange = time.Now()

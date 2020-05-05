@@ -3,7 +3,6 @@
 # https://gqlgen.com/getting-started/
 
 type FermentationMonitor {
-  id: ID!
   name: String!
   type: String!
   temperature: Float
@@ -12,7 +11,6 @@ type FermentationMonitor {
 }
 
 type FermentationContainer {
-  id: ID!
   name: String!
   canHeat: Boolean!
   heating: Boolean!  
@@ -21,15 +19,12 @@ type FermentationContainer {
 }
 
 type Fermentation {
-  id: ID!
   monitor: FermentationMonitor
   container: FermentationContainer
 }
 
 type Batch {
-  id: ID!
   name: String!
-  recipe: Recipe
   state: BatchState!
   fermentation: Fermentation
 }
@@ -41,14 +36,19 @@ enum BatchState {
   CONDITIONING,
 }
 
-type Recipe {
-  id: ID!
+input SetMonitorInput {
   name: String!
+  temperature: Float
+  gravity: Float
 }
 
 type Query {
   batches: [Batch!]!
   monitors: [FermentationMonitor!]!
+}
+
+type Mutation {
+  setMonitor(input: SetMonitorInput) : String!
 }
 
 

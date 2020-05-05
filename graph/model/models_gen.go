@@ -11,21 +11,17 @@ import (
 )
 
 type Batch struct {
-	ID           string        `json:"id"`
 	Name         string        `json:"name"`
-	Recipe       *Recipe       `json:"recipe"`
 	State        BatchState    `json:"state"`
 	Fermentation *Fermentation `json:"fermentation"`
 }
 
 type Fermentation struct {
-	ID        string                    `json:"id"`
 	Monitor   *hwinterface.MonitorState `json:"monitor"`
 	Container *FermentationContainer    `json:"container"`
 }
 
 type FermentationContainer struct {
-	ID      string `json:"id"`
 	Name    string `json:"name"`
 	CanHeat bool   `json:"canHeat"`
 	Heating bool   `json:"heating"`
@@ -33,9 +29,10 @@ type FermentationContainer struct {
 	CanCool bool   `json:"canCool"`
 }
 
-type Recipe struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+type SetMonitorInput struct {
+	Name        string   `json:"name"`
+	Temperature *float64 `json:"temperature"`
+	Gravity     *float64 `json:"gravity"`
 }
 
 type BatchState string

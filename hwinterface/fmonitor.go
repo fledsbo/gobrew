@@ -14,8 +14,8 @@ type MonitorState struct {
 	Name        string
 	Type        string
 	Timestamp   time.Time
-	Gravity     float64
-	Temperature float64
+	Gravity     *float64
+	Temperature *float64
 }
 
 type monitorController interface {
@@ -63,12 +63,16 @@ func (m *MonitorController) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Ad
 		return
 	}
 
+	gravity := float64(b.minor) / 1000
+	temperature := (float64(b.major) - 32) * 5 / 9
+
 	m.SetMonitor(MonitorState{
 		Name:        tilt,
 		Type:        "Tilt",
 		Timestamp:   time.Now(),
-		Gravity:     float64(b.minor) / 1000,
-		Temperature: (float64(b.major) - 32) * 5 / 9})
+		Gravity:     &gravity,
+		Temperature: &temperature,
+	})
 }
 
 // NewMonitorController creates a new monitor controller
@@ -102,7 +106,8 @@ func (m *MonitorController) GetMonitors() (out []*MonitorState) {
 	out = make([]*MonitorState, 0, len(m.Monitors))
 	for _, v := range m.Monitors {
 		log.Printf("Returning data for %s", v.Name)
-		out = append(out, &v)
+		m := v
+		out = append(out, &m)
 	}
 	return
 }
