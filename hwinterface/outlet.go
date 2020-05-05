@@ -53,6 +53,7 @@ func dialCode(group int, id int, on bool) (out []byte) {
 }
 
 func NewOutletController() (out *OutletController) {
+	out = new(OutletController)
 	chip, err := gpiod.NewChip("gpiochip0")
 	if err != nil {
 		panic(err)
