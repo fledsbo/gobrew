@@ -5,7 +5,6 @@ package graph
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/fledsbo/gobrew/graph/generated"
 	"github.com/fledsbo/gobrew/graph/model"
@@ -13,15 +12,16 @@ import (
 )
 
 func (r *fermentationMonitorResolver) ID(ctx context.Context, obj *hwinterface.MonitorState) (string, error) {
-	panic(fmt.Errorf("not implemented"))
+	return obj.Name, nil
 }
 
 func (r *fermentationMonitorResolver) Timestamp(ctx context.Context, obj *hwinterface.MonitorState) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	timestamp := obj.Timestamp.Format("2006-01-02T15:04:05-0700")
+	return &timestamp, nil
 }
 
 func (r *queryResolver) Batches(ctx context.Context) ([]*model.Batch, error) {
-	panic(fmt.Errorf("not implemented"))
+	return []*model.Batch{}, nil
 }
 
 func (r *queryResolver) Monitors(ctx context.Context) ([]*hwinterface.MonitorState, error) {
