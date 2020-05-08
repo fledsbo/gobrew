@@ -7,6 +7,10 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+
+	"github.com/fledsbo/gobrew/apis"
+	"github.com/fledsbo/gobrew/config"
+	"github.com/fledsbo/gobrew/fermentation"
 	"github.com/fledsbo/gobrew/graph"
 	"github.com/fledsbo/gobrew/graph/generated"
 	"github.com/fledsbo/gobrew/hwinterface"
@@ -23,27 +27,40 @@ func main() {
 
 	monitorController := hwinterface.NewMonitorController()
 	outletController := hwinterface.NewOutletController()
+	fermentationController := fermentation.NewController(monitorController, outletController)
+
+	defer outletController.SwitchAllOff()
 
 	storage := storage.NewStorage()
 	storage.MonitorController = monitorController
 	storage.OutletController = outletController
+	storage.FermentationController = fermentationController
+
+	var cfg = new(config.Config)
+	config.LoadConfig(cfg)
 
 	err := storage.LoadOutlets()
 	if err != nil {
 		panic(err)
 	}
-	fermentations, err := storage.LoadFermentations()
+	err = storage.LoadFermentations()
 	if err != nil {
 		panic(err)
 	}
 
+	brewfather := apis.Brewfather{
+		FermentationController: fermentationController,
+		Config:                 cfg,
+	}
+	go brewfather.Run()
 	go monitorController.Scan()
 
 	resolver := &graph.Resolver{
-		MonitorController:       monitorController,
-		OutletController:        outletController,
-		FermentationControllers: fermentations,
-		Storage:                 storage,
+		Config:                 cfg,
+		MonitorController:      monitorController,
+		OutletController:       outletController,
+		FermentationController: fermentationController,
+		Storage:                storage,
 	}
 
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))

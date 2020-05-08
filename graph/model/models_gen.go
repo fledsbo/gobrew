@@ -33,6 +33,10 @@ type FermentationConfig struct {
 	MinOutletDurationSec int     `json:"MinOutletDurationSec"`
 }
 
+type RemoveFermentationInput struct {
+	Name string `json:"name"`
+}
+
 type SetFermentationConfigInput struct {
 	TargetTemp           *float64 `json:"TargetTemp"`
 	Hysteresis           *float64 `json:"Hysteresis"`

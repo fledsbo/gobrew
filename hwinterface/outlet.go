@@ -1,6 +1,8 @@
 package hwinterface
 
 import (
+	"log"
+
 	"github.com/martinohmann/rfoutlet/pkg/gpio"
 	"github.com/warthog618/gpiod"
 )
@@ -100,4 +102,11 @@ func (t *OutletController) SwitchOn(outlet Outlet) {
 
 func (t *OutletController) SwitchOff(outlet Outlet) {
 	<-t.transmitter.Transmit(outlet.CodeOff, gpio.DefaultProtocols[outlet.Protocol], outlet.PulseLength)
+}
+
+func (t *OutletController) SwitchAllOff() {
+	log.Println("Turning off all outlets")
+	for _, outlet := range t.Outlets {
+		t.SwitchOff(outlet)
+	}
 }

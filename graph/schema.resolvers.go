@@ -5,6 +5,7 @@ package graph
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -30,8 +31,8 @@ func (r *mutationResolver) SetMonitor(ctx context.Context, input *model.SetMonit
 }
 
 func (r *mutationResolver) SetFermentation(ctx context.Context, input *model.SetFermentationInput) (string, error) {
-	var found *fermentation.FermentationController
-	for _, ferm := range r.FermentationControllers {
+	var found *fermentation.Batch
+	for _, ferm := range r.FermentationController.Batches {
 		if ferm.Name == input.Name {
 			found = ferm
 		} else {
@@ -50,8 +51,10 @@ func (r *mutationResolver) SetFermentation(ctx context.Context, input *model.Set
 	}
 
 	if found == nil {
-		found = fermentation.NewFermentationController(input.Name, r.MonitorController, r.OutletController)
-		r.FermentationControllers = append(r.FermentationControllers, found)
+		found = &fermentation.Batch{
+			Name: input.Name,
+		}
+		r.FermentationController.Batches = append(r.FermentationController.Batches, found)
 	}
 
 	if input.Monitor != nil {
@@ -87,9 +90,20 @@ func (r *mutationResolver) SetFermentation(ctx context.Context, input *model.Set
 		}
 	}
 
-	err := r.Storage.StoreFermentations(r.FermentationControllers)
+	err := r.Storage.StoreFermentations()
 
 	return found.Name, err
+}
+
+func (r *mutationResolver) RemoveFermentation(ctx context.Context, input *model.RemoveFermentationInput) (string, error) {
+	for i, b := range r.FermentationController.Batches {
+		if b.Name == input.Name {
+			r.FermentationController.Batches = append(r.FermentationController.Batches[:i], r.FermentationController.Batches[i+1:]...)
+			r.Storage.RemoveFermentation(input.Name)
+			return input.Name, nil
+		}
+	}
+	return "", errors.New("Fermentation not found")
 }
 
 func (r *mutationResolver) SetupDialOutlet(ctx context.Context, input *model.SetupDialOutletInput) (string, error) {
@@ -99,8 +113,8 @@ func (r *mutationResolver) SetupDialOutlet(ctx context.Context, input *model.Set
 }
 
 func (r *queryResolver) Fermentations(ctx context.Context) ([]*model.Fermentation, error) {
-	out := make([]*model.Fermentation, 0, len(r.FermentationControllers))
-	for _, fc := range r.FermentationControllers {
+	out := make([]*model.Fermentation, 0, len(r.FermentationController.Batches))
+	for _, fc := range r.FermentationController.Batches {
 		f := model.Fermentation{
 			Name:    fc.Name,
 			CanHeat: fc.AssignedHeatingOutlet != "",

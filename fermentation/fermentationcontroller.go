@@ -7,11 +7,8 @@ import (
 	"github.com/fledsbo/gobrew/hwinterface"
 )
 
-type FermentationController struct {
+type Batch struct {
 	Name string
-
-	monitorController *hwinterface.MonitorController
-	outletController  *hwinterface.OutletController
 
 	AssignedCoolingOutlet string
 	AssignedHeatingOutlet string
@@ -29,33 +26,45 @@ type FermentationController struct {
 	LastStateChange  time.Time
 }
 
-func NewFermentationController(name string, monitorC *hwinterface.MonitorController, outletC *hwinterface.OutletController) (out *FermentationController) {
-	out = &FermentationController{
-		Name: name,
+type BatchState struct {
+	Temperature *float64
+	Gravity     *float64
+}
 
+type Controller struct {
+	Batches []*Batch
+
+	monitorController *hwinterface.MonitorController
+	outletController  *hwinterface.OutletController
+}
+
+func NewController(monitorC *hwinterface.MonitorController, outletC *hwinterface.OutletController) (out *Controller) {
+	out = &Controller{
 		monitorController: monitorC,
 		outletController:  outletC,
-
-		TargetTemp: 18.0,
-		Hysteresis: 0.5,
-
-		MaxReadingAge:     10 * time.Minute,
-		MinOutletDuration: 1 * time.Minute,
-
-		CurrentlyHeating: false,
-		CurrentlyCooling: false,
 	}
 
 	go out.Run()
 	return
 }
 
-func (c *FermentationController) Check() {
+func (c *Controller) GetBatchState(batch *Batch) (out BatchState) {
+
+	monitor, found := c.monitorController.GetMonitor(batch.AssignedMonitor)
+	if found {
+		out.Gravity = monitor.Gravity
+		out.Temperature = monitor.Temperature
+	}
+
+	return
+}
+
+func (c *Batch) check(monitorController *hwinterface.MonitorController, outletController *hwinterface.OutletController) {
 	var monitorState hwinterface.MonitorState
 	found := false
 
 	if c.AssignedMonitor != "" {
-		monitorState, found = c.monitorController.GetMonitor(c.AssignedMonitor)
+		monitorState, found = monitorController.GetMonitor(c.AssignedMonitor)
 	}
 
 	previousCooling := c.CurrentlyCooling
@@ -101,31 +110,33 @@ func (c *FermentationController) Check() {
 		}
 	}
 
-	heatingOutlet := c.outletController.GetOutlet(c.AssignedHeatingOutlet)
+	heatingOutlet := outletController.GetOutlet(c.AssignedHeatingOutlet)
 
 	// We set the outlets every time, in case they missed a previous command
 	if heatingOutlet != nil {
 		if c.CurrentlyHeating {
-			c.outletController.SwitchOn(*heatingOutlet)
+			outletController.SwitchOn(*heatingOutlet)
 		} else {
-			c.outletController.SwitchOff(*heatingOutlet)
+			outletController.SwitchOff(*heatingOutlet)
 		}
 	}
 
-	coolingOutlet := c.outletController.GetOutlet(c.AssignedCoolingOutlet)
+	coolingOutlet := outletController.GetOutlet(c.AssignedCoolingOutlet)
 
 	if coolingOutlet != nil {
 		if c.CurrentlyCooling {
-			c.outletController.SwitchOn(*coolingOutlet)
+			outletController.SwitchOn(*coolingOutlet)
 		} else {
-			c.outletController.SwitchOff(*coolingOutlet)
+			outletController.SwitchOff(*coolingOutlet)
 		}
 	}
 }
 
-func (c *FermentationController) Run() {
+func (c *Controller) Run() {
 	for {
-		c.Check()
+		for _, b := range c.Batches {
+			b.check(c.monitorController, c.outletController)
+		}
 		time.Sleep(time.Second)
 	}
 }

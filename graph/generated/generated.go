@@ -77,9 +77,10 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		SetFermentation func(childComplexity int, input *model.SetFermentationInput) int
-		SetMonitor      func(childComplexity int, input *model.SetMonitorInput) int
-		SetupDialOutlet func(childComplexity int, input *model.SetupDialOutletInput) int
+		RemoveFermentation func(childComplexity int, input *model.RemoveFermentationInput) int
+		SetFermentation    func(childComplexity int, input *model.SetFermentationInput) int
+		SetMonitor         func(childComplexity int, input *model.SetMonitorInput) int
+		SetupDialOutlet    func(childComplexity int, input *model.SetupDialOutletInput) int
 	}
 
 	Outlet struct {
@@ -99,6 +100,7 @@ type FermentationMonitorResolver interface {
 type MutationResolver interface {
 	SetMonitor(ctx context.Context, input *model.SetMonitorInput) (string, error)
 	SetFermentation(ctx context.Context, input *model.SetFermentationInput) (string, error)
+	RemoveFermentation(ctx context.Context, input *model.RemoveFermentationInput) (string, error)
 	SetupDialOutlet(ctx context.Context, input *model.SetupDialOutletInput) (string, error)
 }
 type QueryResolver interface {
@@ -254,6 +256,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.FermentationMonitor.Type(childComplexity), true
+
+	case "Mutation.removeFermentation":
+		if e.complexity.Mutation.RemoveFermentation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_removeFermentation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.RemoveFermentation(childComplexity, args["input"].(*model.RemoveFermentationInput)), true
 
 	case "Mutation.setFermentation":
 		if e.complexity.Mutation.SetFermentation == nil {
@@ -458,6 +472,10 @@ input SetFermentationInput {
   config: SetFermentationConfigInput
 }
 
+input RemoveFermentationInput {
+  name: String!
+}
+
 input SetupDialOutletInput {
   name: String!
   group: Int!
@@ -467,6 +485,7 @@ input SetupDialOutletInput {
 type Mutation {
   setMonitor(input: SetMonitorInput) : String!
   setFermentation(input: SetFermentationInput) : String!
+  removeFermentation(input: RemoveFermentationInput) : String!
   setupDialOutlet(input: SetupDialOutletInput) : String!
 }
 
@@ -478,6 +497,20 @@ var parsedSchema = gqlparser.MustLoadSchema(sources...)
 // endregion ************************** generated!.gotpl **************************
 
 // region    ***************************** args.gotpl *****************************
+
+func (ec *executionContext) field_Mutation_removeFermentation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *model.RemoveFermentationInput
+	if tmp, ok := rawArgs["input"]; ok {
+		arg0, err = ec.unmarshalORemoveFermentationInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRemoveFermentationInput(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["input"] = arg0
+	return args, nil
+}
 
 func (ec *executionContext) field_Mutation_setFermentation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
@@ -1265,6 +1298,47 @@ func (ec *executionContext) _Mutation_setFermentation(ctx context.Context, field
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
 		return ec.resolvers.Mutation().SetFermentation(rctx, args["input"].(*model.SetFermentationInput))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_removeFermentation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Mutation",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_removeFermentation_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().RemoveFermentation(rctx, args["input"].(*model.RemoveFermentationInput))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2582,6 +2656,24 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputRemoveFermentationInput(ctx context.Context, obj interface{}) (model.RemoveFermentationInput, error) {
+	var it model.RemoveFermentationInput
+	var asMap = obj.(map[string]interface{})
+
+	for k, v := range asMap {
+		switch k {
+		case "name":
+			var err error
+			it.Name, err = ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputSetFermentationConfigInput(ctx context.Context, obj interface{}) (model.SetFermentationConfigInput, error) {
 	var it model.SetFermentationConfigInput
 	var asMap = obj.(map[string]interface{})
@@ -2924,6 +3016,11 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "setFermentation":
 			out.Values[i] = ec._Mutation_setFermentation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "removeFermentation":
+			out.Values[i] = ec._Mutation_removeFermentation(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -3831,6 +3928,18 @@ func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.Sele
 		return graphql.Null
 	}
 	return ec.marshalOInt2int(ctx, sel, *v)
+}
+
+func (ec *executionContext) unmarshalORemoveFermentationInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRemoveFermentationInput(ctx context.Context, v interface{}) (model.RemoveFermentationInput, error) {
+	return ec.unmarshalInputRemoveFermentationInput(ctx, v)
+}
+
+func (ec *executionContext) unmarshalORemoveFermentationInput2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRemoveFermentationInput(ctx context.Context, v interface{}) (*model.RemoveFermentationInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalORemoveFermentationInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐRemoveFermentationInput(ctx, v)
+	return &res, err
 }
 
 func (ec *executionContext) unmarshalOSetFermentationConfigInput2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐSetFermentationConfigInput(ctx context.Context, v interface{}) (model.SetFermentationConfigInput, error) {

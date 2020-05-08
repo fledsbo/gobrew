@@ -11,9 +11,10 @@ import (
 
 // Storage holds database state
 type Storage struct {
-	db                *bolt.DB
-	MonitorController *hwinterface.MonitorController
-	OutletController  *hwinterface.OutletController
+	db                     *bolt.DB
+	MonitorController      *hwinterface.MonitorController
+	OutletController       *hwinterface.OutletController
+	FermentationController *fermentation.Controller
 }
 
 const fermTable = "fermentations"
@@ -36,14 +37,14 @@ func NewStorage() *Storage {
 }
 
 // StoreFermentations stores the list of fermentations
-func (s *Storage) StoreFermentations(ferms []*fermentation.FermentationController) error {
+func (s *Storage) StoreFermentations() error {
 
 	err := s.db.Update(func(tx *bolt.Tx) error {
 		b, err := tx.CreateBucketIfNotExists([]byte(fermTable))
 		if err != nil {
 			return err
 		}
-		for _, ferm := range ferms {
+		for _, ferm := range s.FermentationController.Batches {
 			encoded, err := json.Marshal(ferm)
 			log.Print("Json: " + string(encoded))
 			if err != nil {
@@ -60,9 +61,22 @@ func (s *Storage) StoreFermentations(ferms []*fermentation.FermentationControlle
 	return err
 }
 
+// RemoveFermentation removes a specific fermentation from store
+func (s *Storage) RemoveFermentation(key string) error {
+
+	err := s.db.Update(func(tx *bolt.Tx) error {
+		b, err := tx.CreateBucketIfNotExists([]byte(fermTable))
+		if err != nil {
+			return err
+		}
+		return b.Delete([]byte(key))
+	})
+
+	return err
+}
+
 // LoadFermentations loads the list of outlets
-func (s *Storage) LoadFermentations() ([]*fermentation.FermentationController, error) {
-	out := make([]*fermentation.FermentationController, 0, 25)
+func (s *Storage) LoadFermentations() error {
 	err := s.db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(fermTable))
 		if b == nil {
@@ -70,15 +84,15 @@ func (s *Storage) LoadFermentations() ([]*fermentation.FermentationController, e
 		}
 
 		b.ForEach(func(k, v []byte) error {
-			fermentation := fermentation.NewFermentationController(string(k), s.MonitorController, s.OutletController)
-			json.Unmarshal(v, fermentation)
-			out = append(out, fermentation)
+			var fermentation fermentation.Batch
+			json.Unmarshal(v, &fermentation)
+			s.FermentationController.Batches = append(s.FermentationController.Batches, &fermentation)
 			return nil
 		})
 		return nil
 	})
 
-	return out, err
+	return err
 }
 
 // StoreOutlets stores the list of outlets
