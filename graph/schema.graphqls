@@ -24,7 +24,8 @@ type Fermentation {
   heating: Boolean!  
   cooling: Boolean!
   canCool: Boolean!
-
+  currentGravity: Float!
+  currentTemperature: Float!
   config: FermentationConfig
 }
 

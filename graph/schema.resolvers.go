@@ -116,11 +116,13 @@ func (r *queryResolver) Fermentations(ctx context.Context) ([]*model.Fermentatio
 	out := make([]*model.Fermentation, 0, len(r.FermentationController.Batches))
 	for _, fc := range r.FermentationController.Batches {
 		f := model.Fermentation{
-			Name:    fc.Name,
-			CanHeat: fc.AssignedHeatingOutlet != "",
-			Heating: fc.CurrentlyHeating,
-			CanCool: fc.AssignedCoolingOutlet != "",
-			Cooling: fc.CurrentlyCooling,
+			Name:               fc.Name,
+			CanHeat:            fc.AssignedHeatingOutlet != "",
+			Heating:            fc.CurrentlyHeating,
+			CanCool:            fc.AssignedCoolingOutlet != "",
+			Cooling:            fc.CurrentlyCooling,
+			CurrentTemperature: fc.CurrentTemp,
+			CurrentGravity:     fc.CurrentGravity,
 		}
 		config := model.FermentationConfig{
 			TargetTemp:           fc.TargetTemp,

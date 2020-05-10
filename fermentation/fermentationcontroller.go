@@ -19,11 +19,15 @@ type Batch struct {
 	MaxReadingAge     time.Duration
 	MinOutletDuration time.Duration
 
-	CurrentGravity float64
-
 	CurrentlyHeating bool
 	CurrentlyCooling bool
 	LastStateChange  time.Time
+
+	CurrentGravity float64
+	CurrentTemp    float64
+
+	tempAverager    averager
+	gravityAverager averager
 }
 
 type BatchState struct {
@@ -50,13 +54,10 @@ func NewController(monitorC *hwinterface.MonitorController, outletC *hwinterface
 
 func (c *Controller) GetBatchState(batch *Batch) (out BatchState) {
 
-	monitor, found := c.monitorController.GetMonitor(batch.AssignedMonitor)
-	if found {
-		out.Gravity = monitor.Gravity
-		out.Temperature = monitor.Temperature
+	return BatchState{
+		&batch.CurrentTemp,
+		&batch.CurrentGravity,
 	}
-
-	return
 }
 
 func (c *Batch) check(monitorController *hwinterface.MonitorController, outletController *hwinterface.OutletController) {
@@ -71,18 +72,25 @@ func (c *Batch) check(monitorController *hwinterface.MonitorController, outletCo
 	previousHeating := c.CurrentlyHeating
 
 	if found && monitorState.Temperature != nil && time.Now().Sub(monitorState.Timestamp) < c.MaxReadingAge {
-		if *monitorState.Temperature > c.TargetTemp &&
+
+		c.CurrentTemp = c.tempAverager.addReading(*monitorState.Temperature)
+
+		if monitorState.Gravity != nil {
+			c.CurrentGravity = c.gravityAverager.addReading(*monitorState.Gravity)
+		}
+
+		if c.CurrentTemp > c.TargetTemp &&
 			time.Now().Sub(c.LastStateChange) > c.MinOutletDuration {
 			c.CurrentlyHeating = false
-			if *monitorState.Temperature > (c.TargetTemp + c.Hysteresis) {
+			if c.CurrentTemp > (c.TargetTemp + c.Hysteresis) {
 				c.CurrentlyCooling = true
 			}
 			c.LastStateChange = time.Now()
 		}
-		if *monitorState.Temperature < c.TargetTemp &&
+		if c.CurrentTemp < c.TargetTemp &&
 			time.Now().Sub(c.LastStateChange) > c.MinOutletDuration {
 			c.CurrentlyCooling = false
-			if *monitorState.Temperature < (c.TargetTemp - c.Hysteresis) {
+			if c.CurrentTemp < (c.TargetTemp - c.Hysteresis) {
 				c.CurrentlyHeating = true
 			}
 			c.LastStateChange = time.Now()

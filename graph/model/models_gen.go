@@ -17,13 +17,15 @@ type Batch struct {
 }
 
 type Fermentation struct {
-	Name    string                    `json:"name"`
-	Monitor *hwinterface.MonitorState `json:"monitor"`
-	CanHeat bool                      `json:"canHeat"`
-	Heating bool                      `json:"heating"`
-	Cooling bool                      `json:"cooling"`
-	CanCool bool                      `json:"canCool"`
-	Config  *FermentationConfig       `json:"config"`
+	Name               string                    `json:"name"`
+	Monitor            *hwinterface.MonitorState `json:"monitor"`
+	CanHeat            bool                      `json:"canHeat"`
+	Heating            bool                      `json:"heating"`
+	Cooling            bool                      `json:"cooling"`
+	CanCool            bool                      `json:"canCool"`
+	CurrentGravity     float64                   `json:"currentGravity"`
+	CurrentTemperature float64                   `json:"currentTemperature"`
+	Config             *FermentationConfig       `json:"config"`
 }
 
 type FermentationConfig struct {
