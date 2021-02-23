@@ -46,10 +46,15 @@ type Outlet {
   name: String!
 }
 
+type Test {
+  name: String!
+}
+
 type Query {
   fermentations: [Fermentation!]!
   monitors: [FermentationMonitor!]!
   outlets: [Outlet!]!
+  test: Test!
 }
 
 
@@ -90,5 +95,6 @@ type Mutation {
   removeFermentation(input: RemoveFermentationInput) : String!
   setupDialOutlet(input: SetupDialOutletInput) : String!
 }
+
 
 

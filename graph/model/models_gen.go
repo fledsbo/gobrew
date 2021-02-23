@@ -66,6 +66,10 @@ type SetupDialOutletInput struct {
 	Outlet int    `json:"outlet"`
 }
 
+type Test struct {
+	Name string `json:"name"`
+}
+
 type BatchState string
 
 const (

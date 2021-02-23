@@ -145,6 +145,6 @@ func (c *Controller) Run() {
 		for _, b := range c.Batches {
 			b.check(c.monitorController, c.outletController)
 		}
-		time.Sleep(time.Second)
+		time.Sleep(10 * time.Second)
 	}
 }

@@ -154,6 +154,13 @@ func (r *queryResolver) Outlets(ctx context.Context) ([]*hwinterface.Outlet, err
 	return out, nil
 }
 
+func (r *queryResolver) Test(ctx context.Context) (*model.Test, error) {
+	t := model.Test{
+		Name: "foobar",
+	}
+	return &t, nil
+}
+
 // FermentationMonitor returns generated.FermentationMonitorResolver implementation.
 func (r *Resolver) FermentationMonitor() generated.FermentationMonitorResolver {
 	return &fermentationMonitorResolver{r}

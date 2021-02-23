@@ -97,10 +97,12 @@ func (t *OutletController) Close() {
 }
 
 func (t *OutletController) SwitchOn(outlet Outlet) {
+	log.Println("SwitchOn")
 	<-t.transmitter.Transmit(outlet.CodeOn, gpio.DefaultProtocols[outlet.Protocol], outlet.PulseLength)
 }
 
 func (t *OutletController) SwitchOff(outlet Outlet) {
+	log.Println("SwitchOff")
 	<-t.transmitter.Transmit(outlet.CodeOff, gpio.DefaultProtocols[outlet.Protocol], outlet.PulseLength)
 }
 

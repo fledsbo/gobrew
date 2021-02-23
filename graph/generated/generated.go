@@ -93,6 +93,11 @@ type ComplexityRoot struct {
 		Fermentations func(childComplexity int) int
 		Monitors      func(childComplexity int) int
 		Outlets       func(childComplexity int) int
+		Test          func(childComplexity int) int
+	}
+
+	Test struct {
+		Name func(childComplexity int) int
 	}
 }
 
@@ -109,6 +114,7 @@ type QueryResolver interface {
 	Fermentations(ctx context.Context) ([]*model.Fermentation, error)
 	Monitors(ctx context.Context) ([]*hwinterface.MonitorState, error)
 	Outlets(ctx context.Context) ([]*hwinterface.Outlet, error)
+	Test(ctx context.Context) (*model.Test, error)
 }
 
 type executableSchema struct {
@@ -349,6 +355,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Outlets(childComplexity), true
 
+	case "Query.test":
+		if e.complexity.Query.Test == nil {
+			break
+		}
+
+		return e.complexity.Query.Test(childComplexity), true
+
+	case "Test.name":
+		if e.complexity.Test.Name == nil {
+			break
+		}
+
+		return e.complexity.Test.Name(childComplexity), true
+
 	}
 	return 0, false
 }
@@ -461,10 +481,15 @@ type Outlet {
   name: String!
 }
 
+type Test {
+  name: String!
+}
+
 type Query {
   fermentations: [Fermentation!]!
   monitors: [FermentationMonitor!]!
   outlets: [Outlet!]!
+  test: Test!
 }
 
 
@@ -505,6 +530,7 @@ type Mutation {
   removeFermentation(input: RemoveFermentationInput) : String!
   setupDialOutlet(input: SetupDialOutletInput) : String!
 }
+
 
 
 `, BuiltIn: false},
@@ -1617,6 +1643,40 @@ func (ec *executionContext) _Query_outlets(ctx context.Context, field graphql.Co
 	return ec.marshalNOutlet2ᚕᚖgithubᚗcomᚋfledsboᚋgobrewᚋhwinterfaceᚐOutletᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_test(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Query",
+		Field:    field,
+		Args:     nil,
+		IsMethod: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Test(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Test)
+	fc.Result = res
+	return ec.marshalNTest2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐTest(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1684,6 +1744,40 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Test_name(ctx context.Context, field graphql.CollectedField, obj *model.Test) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:   "Test",
+		Field:    field,
+		Args:     nil,
+		IsMethod: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) ___Directive_name(ctx context.Context, field graphql.CollectedField, obj *introspection.Directive) (ret graphql.Marshaler) {
@@ -3219,10 +3313,51 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "test":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_test(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var testImplementors = []string{"Test"}
+
+func (ec *executionContext) _Test(ctx context.Context, sel ast.SelectionSet, obj *model.Test) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, testImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Test")
+		case "name":
+			out.Values[i] = ec._Test_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3695,6 +3830,20 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNTest2githubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐTest(ctx context.Context, sel ast.SelectionSet, v model.Test) graphql.Marshaler {
+	return ec._Test(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTest2ᚖgithubᚗcomᚋfledsboᚋgobrewᚋgraphᚋmodelᚐTest(ctx context.Context, sel ast.SelectionSet, v *model.Test) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Test(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {

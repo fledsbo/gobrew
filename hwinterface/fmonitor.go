@@ -60,6 +60,7 @@ func (m *MonitorController) onPeripheralDiscovered(p gatt.Peripheral, a *gatt.Ad
 
 	tilt, ok := tiltIds[b.uuid]
 	if !ok {
+		log.Printf("Unknown device %s", b.uuid)
 		return
 	}
 
